@@ -124,14 +124,6 @@ class Signal:
         Self.LFO.Update()
         Self.Current_value = Self.ADSR.Current_value * Self.LFO.Current_value
 
-    def Get_current_value(Self):
-        if(Self.Current_value > 1):
-            return 1
-        elif(Self.Current_value < 0):
-            return 0
-        else:
-            return Self.Current_value
-
 class ADSR:
     def __init__(Self, After_attack_amplitude, After_decay_amplitude, Attack, Decay, Sustain, Release):
         Self.After_attack_amplitude = After_attack_amplitude
@@ -150,7 +142,7 @@ class ADSR:
             Self.Progress = 0.75
 
         if(round(Self.Progress, 2) < 0.25): #Attack phase
-            # TODO This whole Attack_cycles block (the three next lines) can later be moved up to the __init__ function so that it only has to be computed once. This goes for the other phases (decay, sustain, and release) as well.
+            # TODO This whole blcok (the three next lines) where Attack_cycles is calculated can later be moved up to the __init__ function so that it only has to be computed once. This goes for the other phases (decay, sustain, and release) as well.
             Attack_cycles = round(Max_Attack_cycles * Self.Attack)
             if Attack_cycles == 0:
                 Attack_cycles = 1
@@ -164,7 +156,7 @@ class ADSR:
             if Decay_cycles == 0:
                 Decay_cycles = 1
             Self.Progress = Self.Progress + (0.25 / Decay_cycles)
-            Self.Current_value = round(Self.After_attack_amplitude - (1 - Self.After_decay_amplitude) * ((Self.Progress - 0.25) * 4), 3)
+            Self.Current_value = round(Self.After_attack_amplitude - ((Self.After_attack_amplitude - Self.After_decay_amplitude) * ((Self.Progress - 0.25) * 4)), 3)
 
         elif(round(Self.Progress, 2) < 0.75): #Sustain phase
             if(Self.Progress < 0.50):
@@ -213,10 +205,6 @@ class LFO:
                 Max_LFO_cycles_updated = Max_LFO_cycles
             LFO_cycles = 4 + round((Max_LFO_cycles_updated - 4) * (1 - Self.Rate))
             Self.Progress = Self.Progress + 1/LFO_cycles
-
-
-
-
 
 class Layer2:
     def __init__(Self, Number_of_lights, Program, Sub_program, Parameter1, Parameter2, Parameter3, Parameter4, Parameter5, Parameter6, Parameter7, Parameter8):
@@ -272,7 +260,7 @@ with DMXInterface("Dummy") as interface:
     ### ### I'm setting all of the Layer1 objects to a certain profile just to test this out.
     for Count in range(len(Layer1.Array_of_Layer1_objects)):
         Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
-            Hue = Signal(ADSR(After_attack_amplitude=0.5, After_decay_amplitude=0.5, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0.5, Repeat=True, Rate=1, Phase=0)),
+            Hue = Signal(ADSR(After_attack_amplitude=0.5, After_decay_amplitude=0.85, Attack=0.05, Decay=0.05, Sustain=0.10, Release=0.10), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=1, Phase=0)),
             Saturation = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
             Brightness = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
         )
@@ -281,13 +269,15 @@ with DMXInterface("Dummy") as interface:
         Layer1.Update()
         for Light_number in range(len(Layer0.Array_of_lights)):
             Layer1.Array_of_Layer1_objects[Light_number].Update()
+            print("ADSR Progress:")
+            print(Layer1.Array_of_Layer1_objects[Light_number].Hue.ADSR.Progress)
+            print("ADSR value:")
+            print(Layer1.Array_of_Layer1_objects[Light_number].Hue.ADSR.Current_value)
             print("LFO Progress:")
             print(Layer1.Array_of_Layer1_objects[Light_number].Hue.LFO.Progress)
-            print("ADSR:")
-            print(Layer1.Array_of_Layer1_objects[Light_number].Hue.ADSR.Current_value)
-            print("LFO:")
+            print("LFO value:")
             print(Layer1.Array_of_Layer1_objects[Light_number].Hue.LFO.Current_value)
             print("Combined Value:")
-            print(Layer1.Array_of_Layer1_objects[Light_number].Hue.Get_current_value())
+            print(Layer1.Array_of_Layer1_objects[Light_number].Hue.Current_value)
             print("")
-            # Layer0.Let_there_be_light(Light_number, Hue=Layer1.Array_of_Layer1_objects[Light_number].Get_current_Hue, Saturation=Layer1.Array_of_Layer1_objects[Light_number].Get_current_Saturation, Value=Layer1.Array_of_Layer1_objects[Light_number].Get_current_Value)
+            # Layer0.Let_there_be_light(Light_number, (Hue=Layer1.Array_of_Layer1_objects[Light_number].Hue.Current_value % 1), Saturation=Layer1.Array_of_Layer1_objects[Light_number].Saturation.Current_value, Value=Layer1.Array_of_Layer1_objects[Light_number].Brightness.Current_value)
