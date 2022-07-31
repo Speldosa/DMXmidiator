@@ -280,4 +280,4 @@ with DMXInterface("Dummy") as interface:
             print("Combined Value:")
             print(Layer1.Array_of_Layer1_objects[Light_number].Hue.Current_value)
             print("")
-            # Layer0.Let_there_be_light(Light_number, (Hue=Layer1.Array_of_Layer1_objects[Light_number].Hue.Current_value % 1), Saturation=Layer1.Array_of_Layer1_objects[Light_number].Saturation.Current_value, Value=Layer1.Array_of_Layer1_objects[Light_number].Brightness.Current_value)
+            Layer0.Let_there_be_light(Light_number, Hue=(Layer1.Array_of_Layer1_objects[Light_number].Hue.Current_value % 1), Saturation=Layer1.Array_of_Layer1_objects[Light_number].Saturation.Current_value, Brightness=Layer1.Array_of_Layer1_objects[Light_number].Brightness.Current_value)
