@@ -232,7 +232,7 @@ class Layer2:
 ####################
 ### Open an interface
 # with DMXInterface("FT232R") as interface:
-with DMXInterface("Dummy") as interface:
+with DMXInterface("FT232R") as interface:
 
     ### Initialize a Layer0.
     Layer0 = Layer0(Number_of_lights = Number_of_lights)
