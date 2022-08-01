@@ -12,7 +12,7 @@ import time # Use time.perf_counter() to get the current time.
 ########################
 ### Global variables ###
 ########################
-Number_of_lights = 1
+Number_of_lights = 32
 Global_Max_brightness = 127 #In DMX value.
 Max_Attack_cycles = 128
 Max_Decay_cycles = 128
@@ -69,23 +69,27 @@ def CC_to_ratio(CC_input):
 class Layer0:
     def __init__(Self, Number_of_lights):
         ### Create a universe.
-        universe = DMXUniverse()
+        Self.universe = DMXUniverse()
 
         ### Define a light.
         Self.Array_of_lights = []
         for Count in range(Number_of_lights):
             Light = DMXLight3Slot(address=1+(3*Count))
             Self.Array_of_lights.append(Light)
-            universe.add_light(Light)
+            Self.universe.add_light(Light)
 
         ### Update the interface's frame to be the universe's current state
-        interface.set_frame(universe.serialise())
+        interface.set_frame(Self.universe.serialise())
 
         ### Send an update to the DMX network
         interface.send_update()
 
-    def Let_there_be_light(Self, Light_number, Hue, Saturation, Brightness):
+    def Set_color(Self, Light_number, Hue, Saturation, Brightness):
         Self.Array_of_lights[Light_number].set_colour(hsv_to_dmx_rgb(Hue, Saturation, Brightness))
+    
+    def Let_there_be_light(Self):
+        interface.set_frame(Self.universe.serialise())
+        interface.send_update()
 
 class Layer1:
     def __init__(Self, Number_of_lights):
@@ -100,7 +104,8 @@ class Layer1:
             )
 
     def Update(Self):
-        pass # Hmmmm.... Ska uppdatera Current_value.
+        for Layer1_object in Self.Array_of_Layer1_objects:
+            Layer1_object.Update()
 
 class Layer1_light_object:
     def __init__(Self, Hue, Saturation, Brightness):
@@ -207,18 +212,18 @@ class LFO:
             Self.Progress = Self.Progress + 1/LFO_cycles
 
 class Layer2:
-    def __init__(Self, Number_of_lights, Program, Sub_program, Parameter1, Parameter2, Parameter3, Parameter4, Parameter5, Parameter6, Parameter7, Parameter8):
+    def __init__(Self, Number_of_lights, Main_program, Sub_program, Parameter1, Parameter2, Parameter3, Parameter4, Parameter5, Parameter6, Parameter7, Parameter8):
         Self.Number_of_lights = Number_of_lights
-        Self.Program = Program
-        Self.Sub_program = Sub_program
-        Self.Parameter1 = Parameter1
-        Self.Parameter2 = Parameter2
-        Self.Parameter3 = Parameter3
-        Self.Parameter4 = Parameter4
-        Self.Parameter5 = Parameter5
-        Self.Parameter6 = Parameter6
-        Self.Parameter7 = Parameter7
-        Self.Parameter8 = Parameter8
+        Self.Main_program = Main_program # Can take on values between 1-8. This could be extended, but with 8 different programs, they can all be accessed via the white keys on piano keyboard within the same octave.
+        Self.Sub_program = Sub_program # Can take on values between 1-5. This could be extended, but with 5 different sub programs, they can all be accessed via the black keys on piano keyboard within the same octave.
+        Self.Parameter1 = Parameter1 # Can take on values between 0-127.
+        Self.Parameter2 = Parameter2 # Can take on values between 0-127.
+        Self.Parameter3 = Parameter3 # Can take on values between 0-127.
+        Self.Parameter4 = Parameter4 # Can take on values between 0-127.
+        Self.Parameter5 = Parameter5 # Can take on values between 0-127.
+        Self.Parameter6 = Parameter6 # Can take on values between 0-127.
+        Self.Parameter7 = Parameter7 # Can take on values between 0-127.
+        Self.Parameter8 = Parameter8 # Can take on values between 0-127.
 
 
 #######################
@@ -243,9 +248,9 @@ with DMXInterface("FT232R") as interface:
     ### Initialize a Layer2.
     Layer2 = Layer2(
         Number_of_lights = Number_of_lights,
-        Program = 1, # Can take on values between 1-8. This could be extended, but with 8 different programs, they can all be accessed via the white keys on piano keyboard within the same octave.
-        Sub_program = 1, # Can take on values between 1-5. This could be extended, but with 5 different sub programs, they can all be accessed via the black keys on piano keyboard within the same octave.
-        Parameter1 = 0, # Is set by CC1, which can take on values between 0-127
+        Main_program = 1, 
+        Sub_program = 1, 
+        Parameter1 = 0, 
         Parameter2 = 0, # Is set by CC2, which can take on values between 0-127
         Parameter3 = 0, # Is set by CC3, which can take on values between 0-127
         Parameter4 = 0, # Is set by CC4, which can take on values between 0-127
@@ -257,27 +262,17 @@ with DMXInterface("FT232R") as interface:
 
     ### Test suite.
 
-    ### ### I'm setting all of the Layer1 objects to a certain profile just to test this out.
+    ### ### I'm setting all of the Layer1 objects to a certain profile just to test this out. Right now, this is like a standin for Layer2 which I haven't written yet.
     for Count in range(len(Layer1.Array_of_Layer1_objects)):
         Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
-            Hue = Signal(ADSR(After_attack_amplitude=0.5, After_decay_amplitude=0.85, Attack=0.05, Decay=0.05, Sustain=0.10, Release=0.10), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=1, Phase=0)),
+            Hue = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=1, Repeat=True, Rate=0.01, Phase=0)),
             Saturation = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
             Brightness = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
         )
 
     while True:
+        # Basis for what eventually will be turned into a mediator between Layer1 and Layer0.
         Layer1.Update()
         for Light_number in range(len(Layer0.Array_of_lights)):
-            Layer1.Array_of_Layer1_objects[Light_number].Update()
-            print("ADSR Progress:")
-            print(Layer1.Array_of_Layer1_objects[Light_number].Hue.ADSR.Progress)
-            print("ADSR value:")
-            print(Layer1.Array_of_Layer1_objects[Light_number].Hue.ADSR.Current_value)
-            print("LFO Progress:")
-            print(Layer1.Array_of_Layer1_objects[Light_number].Hue.LFO.Progress)
-            print("LFO value:")
-            print(Layer1.Array_of_Layer1_objects[Light_number].Hue.LFO.Current_value)
-            print("Combined Value:")
-            print(Layer1.Array_of_Layer1_objects[Light_number].Hue.Current_value)
-            print("")
-            Layer0.Let_there_be_light(Light_number, Hue=(Layer1.Array_of_Layer1_objects[Light_number].Hue.Current_value % 1), Saturation=Layer1.Array_of_Layer1_objects[Light_number].Saturation.Current_value, Brightness=Layer1.Array_of_Layer1_objects[Light_number].Brightness.Current_value)
+            Layer0.Set_color(Light_number, Hue=(Layer1.Array_of_Layer1_objects[Light_number].Hue.Current_value % 1), Saturation=Layer1.Array_of_Layer1_objects[Light_number].Saturation.Current_value, Brightness=Layer1.Array_of_Layer1_objects[Light_number].Brightness.Current_value)
+        Layer0.Let_there_be_light()
