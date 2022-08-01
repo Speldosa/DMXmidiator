@@ -13,7 +13,7 @@ import time # Use time.perf_counter() to get the current time.
 ### Global variables ###
 ########################
 Number_of_lights = 32
-Global_Max_brightness = 127 #In DMX value.
+Global_Max_brightness = 64 #In DMX value.
 Max_Attack_cycles = 128
 Max_Decay_cycles = 128
 Max_Sustain_cycles = 128
@@ -186,6 +186,10 @@ class ADSR:
             Self.Progress = Self.Progress + (0.25 / Release_cycles)
             Self.Current_value = Self.Transition_to_release_value - (Self.Transition_to_release_value * ((Self.Progress - 0.75) * 4))
 
+        else:
+            Self.Current_value = 0
+        
+
 class LFO:
     def __init__(Self, Waveform, Amplitude, Repeat, Rate, Phase):
         Self.Waveform = Waveform
@@ -229,7 +233,7 @@ class Layer2:
 #######################
 ### Useful commands ###
 #######################
-### ### print(mido.get_input_names()) # Get a list of all available input ports.
+print(mido.get_input_names()) # Get a list of all available input ports.
 
 
 ####################
@@ -251,28 +255,131 @@ with DMXInterface("FT232R") as interface:
         Main_program = 1, 
         Sub_program = 1, 
         Parameter1 = 0, 
-        Parameter2 = 0, # Is set by CC2, which can take on values between 0-127
-        Parameter3 = 0, # Is set by CC3, which can take on values between 0-127
-        Parameter4 = 0, # Is set by CC4, which can take on values between 0-127
-        Parameter5 = 0, # Is set by CC5, which can take on values between 0-127
-        Parameter6 = 0, # Is set by CC6, which can take on values between 0-127
-        Parameter7 = 0, # Is set by CC7, which can take on values between 0-127
-        Parameter8 = 0  # Is set by CC8, which can take on values between 0-127
-    )
+        Parameter2 = 0,
+        Parameter3 = 0,
+        Parameter4 = 0,
+        Parameter5 = 0,
+        Parameter6 = 0,
+        Parameter7 = 0,
+        Parameter8 = 0
+    )   
+        
+    CC1 = 64
+    CC2 = 64
+    CC3 = 64
+    CC4 = 64
+    CC5 = 64
+    CC6 = 64
+    CC7 = 64
+    CC8 = 64    
+        
+    with mido.open_input('Roland Digital Piano:Roland Digital Piano MIDI 1 36:0') as inport:
 
-    ### Test suite.
+        while True:
+            waiting_cc_messages = []
+            waiting_white_note_messages = []
+            waiting_black_note_messages = []
+            for msg in inport.iter_pending():
+                if(msg.type == 'control_change'):
+                    print(msg)
+                    waiting_cc_messages.append(msg)
+                elif hasattr(msg, 'note'):
+                    if(msg.note == 60 or msg.note == 62 or msg.note == 64 or msg.note == 65 or msg.note == 67 or msg.note == 69 or msg.note == 71):
+                        waiting_white_note_messages.append(msg)
+                    elif(msg.note == 61 or msg.note == 63 or msg.note == 66 or msg.note == 68 or msg.note == 70):
+                        waiting_black_note_messages.append(msg)
 
-    ### ### I'm setting all of the Layer1 objects to a certain profile just to test this out. Right now, this is like a standin for Layer2 which I haven't written yet.
-    for Count in range(len(Layer1.Array_of_Layer1_objects)):
-        Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
-            Hue = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=1, Repeat=True, Rate=0.01, Phase=0)),
-            Saturation = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
-            Brightness = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
-        )
+            for msg in waiting_cc_messages:
+                if(msg.control == 1):
+                    CC1 = msg.value
+                elif(msg.control == 2):
+                    CC2 = msg.value
+                elif(msg.control == 3):
+                    CC3 = msg.value
+                elif(msg.control == 4):
+                    CC4 = msg.value
+                elif(msg.control == 5):
+                    CC5 = msg.value
+                elif(msg.control == 6):
+                    CC6 = msg.value
+                elif(msg.control == 7):
+                    CC7 = msg.value
+                elif(msg.control == 8):
+                    CC8 = msg.value
 
-    while True:
-        # Basis for what eventually will be turned into a mediator between Layer1 and Layer0.
-        Layer1.Update()
-        for Light_number in range(len(Layer0.Array_of_lights)):
-            Layer0.Set_color(Light_number, Hue=(Layer1.Array_of_Layer1_objects[Light_number].Hue.Current_value % 1), Saturation=Layer1.Array_of_Layer1_objects[Light_number].Saturation.Current_value, Brightness=Layer1.Array_of_Layer1_objects[Light_number].Brightness.Current_value)
-        Layer0.Let_there_be_light()
+            for msg in waiting_black_note_messages:
+                # Sub program (black keys).
+                if(msg.note == 61):
+                    Layer2.Sub_program = 1
+                elif(msg.note == 63):
+                    Layer2.Sub_program = 2
+                elif(msg.note == 66):
+                    Layer2.Sub_program = 3
+                elif(msg.note == 68):
+                    Layer2.Sub_program = 4
+                elif(msg.note == 70):
+                    Layer2.Sub_program = 5
+
+            for msg in waiting_white_note_messages:
+            
+                ### Program (white keys).
+                
+                ### ### Program 1: Whole field with ADSR, Sustain level, and HSV settings from CC.
+                if(msg.note == 60): # Only respond to C4.
+                    if(msg.type == 'note_on' and msg.velocity > 0):
+                        for Count in range(Number_of_lights):
+                            if(Layer2.Main_program == 1):
+                                if(Layer2.Sub_program == 1):
+                                    for Count in range(len(Layer1.Array_of_Layer1_objects)):
+                                        Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
+                                            Hue = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
+                                        )
+                                elif(Layer2.Sub_program == 2):
+                                    for Count in range(int(len(Layer1.Array_of_Layer1_objects)/2)):
+                                        Layer1.Array_of_Layer1_objects[int(Count + len(Layer1.Array_of_Layer1_objects)/2)] = Layer1_light_object(
+                                            Hue = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
+                                        )
+                                elif(Layer2.Sub_program == 3):
+                                    for Count in range(int(len(Layer1.Array_of_Layer1_objects)/2)):
+                                        Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
+                                            Hue = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
+                                        )
+                                
+                    if(msg.type == 'note_off' or (msg.type == 'note_on' and msg.velocity == 0)): # On Syntakt, note off is sent by sending note on with a velocity of 0.
+                        if(Layer2.Main_program == 1):
+                            for Count in range(len(Layer1.Array_of_Layer1_objects)):
+                                Layer1.Array_of_Layer1_objects[Count].Hue.ADSR.Progress = 0.75
+                                Layer1.Array_of_Layer1_objects[Count].Saturation.ADSR.Progress = 0.75
+                                Layer1.Array_of_Layer1_objects[Count].Brightness.ADSR.Progress = 0.75
+                                
+                ### ### Program 2: Crazy fun. Random start of random lights.
+                if(msg.note == 62): # Only respond to D4.
+                    if(msg.type == 'note_on' and msg.velocity > 0):
+                        for Count in range(Number_of_lights):
+                            if(Layer2.Main_program == 1):
+                                if(Layer2.Sub_program == 1):
+                                    for Count in range(len(Layer1.Array_of_Layer1_objects)):
+                                        Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
+                                            Hue = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=0.50, Release=1), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
+                                        )
+                                
+                    if(msg.type == 'note_off' or (msg.type == 'note_on' and msg.velocity == 0)): # On Syntakt, note off is sent by sending note on with a velocity of 0.
+                        if(Layer2.Main_program == 1):
+                            for Count in range(len(Layer1.Array_of_Layer1_objects)):
+                                Layer1.Array_of_Layer1_objects[Count].Hue.ADSR.Progress = 1.0
+                                Layer1.Array_of_Layer1_objects[Count].Saturation.ADSR.Progress = 1.0
+                                Layer1.Array_of_Layer1_objects[Count].Brightness.ADSR.Progress = 1.0
+                                    
+            # Basis for what eventually will be turned into a mediator between Layer1 and Layer0.
+            Layer1.Update()
+            for Light_number in range(len(Layer0.Array_of_lights)):
+                Layer0.Set_color(Light_number, Hue=(Layer1.Array_of_Layer1_objects[Light_number].Hue.Current_value % 1), Saturation=Layer1.Array_of_Layer1_objects[Light_number].Saturation.Current_value, Brightness=Layer1.Array_of_Layer1_objects[Light_number].Brightness.Current_value)
+            Layer0.Let_there_be_light()
