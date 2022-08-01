@@ -358,7 +358,7 @@ with DMXInterface("FT232R") as interface:
                                 Layer1.Array_of_Layer1_objects[Count].Saturation.ADSR.Progress = 0.75
                                 Layer1.Array_of_Layer1_objects[Count].Brightness.ADSR.Progress = 0.75
                                 
-                ### ### Program 2: Crazy fun. Random start of random lights.
+                ### ### Program 2: Random start of random lights.
                 if(msg.note == 62): # Only respond to D4.
                     if(msg.type == 'note_on' and msg.velocity > 0):
                         for Count in range(Number_of_lights):
