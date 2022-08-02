@@ -362,6 +362,14 @@ with DMXInterface("FT232R") as interface:
                 ### Program (white keys).
                 
                 ### ### Program 1: Whole field with ADSR, Sustain level, and HSV settings from CC.
+                ### ### ### CC1: Hue
+                ### ### ### CC2: Saturation
+                ### ### ### CC3: After attack brightness
+                ### ### ### CC4: After decay brightness
+                ### ### ### CC5: Attack time
+                ### ### ### CC6: Decay time
+                ### ### ### CC7: Release time
+                ### ### ### CC8: Ignore note off messages (Less than 63 means "No"; more than 63 means "Yes"). Just run a full ADR cycle no matter if there are note off messages.
                 if(msg.note == 60): # Only respond to C4.
                     
                     if(msg.type == 'note_on' and msg.velocity > 0):
