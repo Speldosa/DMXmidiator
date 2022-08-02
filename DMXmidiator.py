@@ -13,7 +13,7 @@ import time # Use time.perf_counter() to get the current time.
 ### Global variables ###
 ########################
 Number_of_lights = 32
-Global_Max_brightness = 64 #In DMX value.
+Global_Max_brightness = 128 #In DMX value.
 Max_Attack_cycles = 128
 Max_Decay_cycles = 128
 Max_Sustain_cycles = 128
@@ -178,13 +178,16 @@ class ADSR:
         elif(round(Self.Progress, 2) < 1.0): #Release phase. It will always use the aloted time set for release time.
             if(Self.Progress < 0.75):
                 Self.Progress = 0.75
-            if(Self.Transition_to_release_value == -1):
-                Self.Transition_to_release_value = Self.Current_value
-            Release_cycles = round(Max_Release_cycles * Self.Release)
-            if Release_cycles == 0:
-                Release_cycles = 1
-            Self.Progress = Self.Progress + (0.25 / Release_cycles)
-            Self.Current_value = Self.Transition_to_release_value - (Self.Transition_to_release_value * ((Self.Progress - 0.75) * 4))
+            if(Self.Release > 1.0): # Hold the release phase if Release is set to more than 1.0.
+                Self.Current_value = Self.After_decay_amplitude
+            else:
+                if(Self.Transition_to_release_value == -1):
+                    Self.Transition_to_release_value = Self.Current_value
+                Release_cycles = round(Max_Release_cycles * Self.Release)
+                if Release_cycles == 0:
+                    Release_cycles = 1
+                Self.Progress = Self.Progress + (0.25 / Release_cycles)
+                Self.Current_value = Self.Transition_to_release_value - (Self.Transition_to_release_value * ((Self.Progress - 0.75) * 4))
 
         else:
             Self.Current_value = 0
@@ -273,7 +276,8 @@ with DMXInterface("FT232R") as interface:
     CC7 = 64
     CC8 = 64    
         
-    with mido.open_input('Roland Digital Piano:Roland Digital Piano MIDI 1 36:0') as inport:
+    # with mido.open_input('Roland Digital Piano:Roland Digital Piano MIDI 1 36:0') as inport:
+    with mido.open_input('Elektron Syntakt:Elektron Syntakt MIDI 1 32:0') as inport:
 
         while True:
             waiting_cc_messages = []
@@ -285,26 +289,28 @@ with DMXInterface("FT232R") as interface:
                     waiting_cc_messages.append(msg)
                 elif hasattr(msg, 'note'):
                     if(msg.note == 60 or msg.note == 62 or msg.note == 64 or msg.note == 65 or msg.note == 67 or msg.note == 69 or msg.note == 71):
+                        print(msg)
                         waiting_white_note_messages.append(msg)
                     elif(msg.note == 61 or msg.note == 63 or msg.note == 66 or msg.note == 68 or msg.note == 70):
+                        print(msg)
                         waiting_black_note_messages.append(msg)
 
             for msg in waiting_cc_messages:
-                if(msg.control == 1):
+                if(msg.control == 70):
                     CC1 = msg.value
-                elif(msg.control == 2):
+                elif(msg.control == 71):
                     CC2 = msg.value
-                elif(msg.control == 3):
+                elif(msg.control == 72):
                     CC3 = msg.value
-                elif(msg.control == 4):
+                elif(msg.control == 73):
                     CC4 = msg.value
-                elif(msg.control == 5):
+                elif(msg.control == 74):
                     CC5 = msg.value
-                elif(msg.control == 6):
+                elif(msg.control == 75):
                     CC6 = msg.value
-                elif(msg.control == 7):
+                elif(msg.control == 76):
                     CC7 = msg.value
-                elif(msg.control == 8):
+                elif(msg.control == 77):
                     CC8 = msg.value
 
             for msg in waiting_black_note_messages:
@@ -326,43 +332,63 @@ with DMXInterface("FT232R") as interface:
                 
                 ### ### Program 1: Whole field with ADSR, Sustain level, and HSV settings from CC.
                 if(msg.note == 60): # Only respond to C4.
+                    
                     if(msg.type == 'note_on' and msg.velocity > 0):
                         for Count in range(Number_of_lights):
                             if(Layer2.Main_program == 1):
+                                
                                 if(Layer2.Sub_program == 1):
                                     for Count in range(len(Layer1.Array_of_Layer1_objects)):
                                         Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
-                                            Hue = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
-                                            Saturation = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
-                                            Brightness = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
+                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC1), After_decay_amplitude=CC_to_ratio(CC1), Attack=0, Decay=0, Sustain=2, Release=2), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC2), After_decay_amplitude=CC_to_ratio(CC2), Attack=0, Decay=0, Sustain=2, Release=2), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=CC_to_ratio(CC4), Attack=CC_to_ratio(CC5), Decay=CC_to_ratio(CC6), Sustain=CC_to_ratio(CC7), Release=CC_to_ratio(CC8)), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
                                         )
+                                        
                                 elif(Layer2.Sub_program == 2):
                                     for Count in range(int(len(Layer1.Array_of_Layer1_objects)/2)):
                                         Layer1.Array_of_Layer1_objects[int(Count + len(Layer1.Array_of_Layer1_objects)/2)] = Layer1_light_object(
-                                            Hue = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
-                                            Saturation = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
-                                            Brightness = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
+                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC1), After_decay_amplitude=CC_to_ratio(CC1), Attack=0, Decay=0, Sustain=2, Release=2), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC2), After_decay_amplitude=CC_to_ratio(CC2), Attack=0, Decay=0, Sustain=2, Release=2), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=CC_to_ratio(CC4), Attack=CC_to_ratio(CC5), Decay=CC_to_ratio(CC6), Sustain=CC_to_ratio(CC7), Release=CC_to_ratio(CC8)), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
                                         )
+                                        
                                 elif(Layer2.Sub_program == 3):
                                     for Count in range(int(len(Layer1.Array_of_Layer1_objects)/2)):
                                         Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
-                                            Hue = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
-                                            Saturation = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
-                                            Brightness = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
+                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC1), After_decay_amplitude=CC_to_ratio(CC1), Attack=0, Decay=0, Sustain=2, Release=2), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC2), After_decay_amplitude=CC_to_ratio(CC2), Attack=0, Decay=0, Sustain=2, Release=2), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=CC_to_ratio(CC4), Attack=CC_to_ratio(CC5), Decay=CC_to_ratio(CC6), Sustain=CC_to_ratio(CC7), Release=CC_to_ratio(CC8)), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
                                         )
                                 
                     if(msg.type == 'note_off' or (msg.type == 'note_on' and msg.velocity == 0)): # On Syntakt, note off is sent by sending note on with a velocity of 0.
                         if(Layer2.Main_program == 1):
-                            for Count in range(len(Layer1.Array_of_Layer1_objects)):
-                                Layer1.Array_of_Layer1_objects[Count].Hue.ADSR.Progress = 0.75
-                                Layer1.Array_of_Layer1_objects[Count].Saturation.ADSR.Progress = 0.75
-                                Layer1.Array_of_Layer1_objects[Count].Brightness.ADSR.Progress = 0.75
+                            
+                            if(Layer2.Sub_program == 1):
+                                for Count in range(len(Layer1.Array_of_Layer1_objects)):
+                                    Layer1.Array_of_Layer1_objects[Count].Hue.ADSR.Progress = 0.75
+                                    Layer1.Array_of_Layer1_objects[Count].Saturation.ADSR.Progress = 0.75
+                                    Layer1.Array_of_Layer1_objects[Count].Brightness.ADSR.Progress = 0.75
+                                    
+                            if(Layer2.Sub_program == 2):
+                                for Count in range(int(len(Layer1.Array_of_Layer1_objects)/2)):
+                                    Layer1.Array_of_Layer1_objects[int(Count + len(Layer1.Array_of_Layer1_objects)/2)].Hue.ADSR.Progress = 0.75
+                                    Layer1.Array_of_Layer1_objects[int(Count + len(Layer1.Array_of_Layer1_objects)/2)].Saturation.ADSR.Progress = 0.75
+                                    Layer1.Array_of_Layer1_objects[int(Count + len(Layer1.Array_of_Layer1_objects)/2)].Brightness.ADSR.Progress = 0.75
+                                    
+                            if(Layer2.Sub_program == 3):
+                                for Count in range(int(len(Layer1.Array_of_Layer1_objects)/2)):
+                                    Layer1.Array_of_Layer1_objects[Count].Hue.ADSR.Progress = 0.75
+                                    Layer1.Array_of_Layer1_objects[Count].Saturation.ADSR.Progress = 0.75
+                                    Layer1.Array_of_Layer1_objects[Count].Brightness.ADSR.Progress = 0.75
                                 
                 ### ### Program 2: Random start of random lights.
                 if(msg.note == 62): # Only respond to D4.
+                    
                     if(msg.type == 'note_on' and msg.velocity > 0):
                         for Count in range(Number_of_lights):
                             if(Layer2.Main_program == 1):
+                                
                                 if(Layer2.Sub_program == 1):
                                     for Count in range(len(Layer1.Array_of_Layer1_objects)):
                                         Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
