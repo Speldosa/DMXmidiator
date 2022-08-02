@@ -62,6 +62,17 @@ def hsv_to_dmx_rgb(Hue, Saturation, Value):
 def CC_to_ratio(CC_input):
     return(CC_input/127)
 
+def CC_to_ratio_with_binary_top_condition(CC_input): # Worthless name, but I can't think of anything better right now.
+    if(CC_input == 127):
+        return 2.0
+    else:
+        return(CC_input/126)
+
+def CC_to_boolean(CC_input):
+    if(CC_input < 64):
+        return False
+    else:
+        return True
 
 #########################
 ### Class definitions ###
@@ -97,9 +108,9 @@ class Layer1:
         for i in range(Number_of_lights):
             Self.Array_of_Layer1_objects.append(
                 Layer1_light_object(
-                    Hue = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=0, Attack=0, Decay=0, Sustain=0, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
-                    Saturation = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=0, Attack=0, Decay=0, Sustain=0, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
-                    Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=0, Attack=0, Decay=0, Sustain=0, Release=0), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
+                    Hue = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=0, Attack=0, Decay=0, Sustain=0, Release=0, Ignore_go_to_release_phase=False), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                    Saturation = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=0, Attack=0, Decay=0, Sustain=0, Release=0, Ignore_go_to_release_phase=False), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                    Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=0, Attack=0, Decay=0, Sustain=0, Release=0, Ignore_go_to_release_phase=False), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
                 )
             )
 
@@ -130,7 +141,7 @@ class Signal:
         Self.Current_value = Self.ADSR.Current_value * Self.LFO.Current_value
 
 class ADSR:
-    def __init__(Self, After_attack_amplitude, After_decay_amplitude, Attack, Decay, Sustain, Release):
+    def __init__(Self, After_attack_amplitude, After_decay_amplitude, Attack, Decay, Sustain, Release, Ignore_go_to_release_phase):
         Self.After_attack_amplitude = After_attack_amplitude
         Self.After_decay_amplitude = After_decay_amplitude
         Self.Attack = Attack
@@ -139,60 +150,80 @@ class ADSR:
         Self.Release = Release
         Self.Progress = 0.0
         Self.Current_value = 0.0
-        Self.Initialize_release_phase = False
-        Self.Transition_to_release_value = -1.0
+        Self.Go_to_release_phase = False # A boolean stating whether the release phase is forced or not (usually because of note off commands).
+        Self.Ignore_go_to_release_phase = Ignore_go_to_release_phase #
+        Self.Transition_to_release_value = 2.0 # Standard behavior (which is set by default). If Self.Transition_to_release_value is set to, for example, 0.50, the value will start at 0.50 whenever the release phase starts, no matter what the current value is.
+        Self.Go_to_next_phase = False
 
     def Update(Self):
-        if(Self.Initialize_release_phase and (Self.Progress < 0.75)):
-            Self.Progress = 0.75
+        if(Self.Go_to_release_phase and (Self.Progress < 0.75)):
+            if(not Self.Ignore_go_to_release_phase):
+                Self.Progress = 0.75
+            
+        Self.Go_to_next_phase = True
 
-        if(round(Self.Progress, 2) < 0.25): #Attack phase
+        if(round(Self.Progress, 2) < 0.25 and Self.Go_to_next_phase): #Attack phase
+            Self.Go_to_next_phase = False
             # TODO This whole blcok (the three next lines) where Attack_cycles is calculated can later be moved up to the __init__ function so that it only has to be computed once. This goes for the other phases (decay, sustain, and release) as well.
             Attack_cycles = round(Max_Attack_cycles * Self.Attack)
             if Attack_cycles == 0:
-                Attack_cycles = 1
-            Self.Progress = Self.Progress + (0.25 / Attack_cycles)
-            Self.Current_value = round((Self.Progress * 4) * Self.After_attack_amplitude, 3)
+                Self.Progress = 0.25
+                Self.Go_to_next_phase = True
+            else:
+                Self.Progress = Self.Progress + (0.25 / Attack_cycles)
+                Self.Current_value = round((Self.Progress * 4) * Self.After_attack_amplitude, 3)
 
-        elif(round(Self.Progress, 2) < 0.50): #Decay phase. Can go higher than the the end of the attack phase.
+        if(round(Self.Progress, 2) < 0.50 and Self.Go_to_next_phase): #Decay phase. Can go higher than the the end of the attack phase.
+            Self.Go_to_next_phase = False
             if(Self.Progress < 0.25):
                 Self.Progress = 0.25
             Decay_cycles = round(Max_Decay_cycles * Self.Decay)
             if Decay_cycles == 0:
-                Decay_cycles = 1
-            Self.Progress = Self.Progress + (0.25 / Decay_cycles)
-            Self.Current_value = round(Self.After_attack_amplitude - ((Self.After_attack_amplitude - Self.After_decay_amplitude) * ((Self.Progress - 0.25) * 4)), 3)
+                Self.Progress = 0.50
+                Self.Go_to_next_phase = True
+            else:
+                Self.Progress = Self.Progress + (0.25 / Decay_cycles)
+                Self.Current_value = round(Self.After_attack_amplitude - ((Self.After_attack_amplitude - Self.After_decay_amplitude) * ((Self.Progress - 0.25) * 4)), 3)
 
-        elif(round(Self.Progress, 2) < 0.75): #Sustain phase
+        if(round(Self.Progress, 2) < 0.75 and Self.Go_to_next_phase): #Sustain phase
+            Self.Go_to_next_phase = False
             if(Self.Progress < 0.50):
                 Self.Progress = 0.50
-            if(Self.Sustain > 1.0): # Hold the sustain phase if Sustain is set to more than 1.0.
-                Self.Current_value = Self.After_decay_amplitude
+            if(Self.Sustain > 1.0): # If sustain is set to above 1.0...
+                if(not Self.Ignore_go_to_release_phase):
+                    Self.Current_value = Self.After_decay_amplitude # ...hold the sustain phase.
+                else: # However, if Ignore_go_to_release_phase mode is activated, skip the sustain phase all together and move on to the release phase.
+                    Self.Go_to_next_phase = True
+                    Self.Progress = 0.75
             else:
                 Sustain_cycles = round(Max_Sustain_cycles * Self.Sustain)
                 if Sustain_cycles == 0:
-                    Sustain_cycles = 1
-                Self.Progress = Self.Progress + (0.25 / Sustain_cycles)
-                Self.Current_value = Self.After_decay_amplitude
+                    Self.Progress = 0.75
+                    Self.Go_to_next_phase = True
+                else:
+                    Self.Progress = Self.Progress + (0.25 / Sustain_cycles)
+                    Self.Current_value = Self.After_decay_amplitude
 
-        elif(round(Self.Progress, 2) < 1.0): #Release phase. It will always use the aloted time set for release time.
+        if(round(Self.Progress, 2) < 1.0 and Self.Go_to_next_phase): #Release phase. It will always use the aloted time set for release time.
+            Self.Go_to_next_phase = False
             if(Self.Progress < 0.75):
                 Self.Progress = 0.75
             if(Self.Release > 1.0): # Hold the release phase if Release is set to more than 1.0.
                 Self.Current_value = Self.After_decay_amplitude
             else:
-                if(Self.Transition_to_release_value == -1):
+                if(Self.Transition_to_release_value == 2.0):
                     Self.Transition_to_release_value = Self.Current_value
                 Release_cycles = round(Max_Release_cycles * Self.Release)
                 if Release_cycles == 0:
-                    Release_cycles = 1
-                Self.Progress = Self.Progress + (0.25 / Release_cycles)
-                Self.Current_value = Self.Transition_to_release_value - (Self.Transition_to_release_value * ((Self.Progress - 0.75) * 4))
+                    Self.Progress = 1.00
+                    Self.Go_to_next_phase = True
+                else:
+                    Self.Progress = Self.Progress + (0.25 / Release_cycles)
+                    Self.Current_value = Self.Transition_to_release_value - (Self.Transition_to_release_value * ((Self.Progress - 0.75) * 4))
 
-        else:
+        if(round(Self.Progress, 2) >= 1.0 and Self.Go_to_next_phase):
             Self.Current_value = 0
         
-
 class LFO:
     def __init__(Self, Waveform, Amplitude, Repeat, Rate, Phase):
         Self.Waveform = Waveform
@@ -221,7 +252,7 @@ class LFO:
 class Layer2:
     def __init__(Self, Number_of_lights, Main_program, Sub_program, Parameter1, Parameter2, Parameter3, Parameter4, Parameter5, Parameter6, Parameter7, Parameter8):
         Self.Number_of_lights = Number_of_lights
-        Self.Main_program = Main_program # Can take on values between 1-8. This could be extended, but with 8 different programs, they can all be accessed via the white keys on piano keyboard within the same octave.
+        Self.Main_program = Main_program # Can take on values between 1-8. This could be extended, but with 8 different programs, they can all be accessed via the white keys on piano keyboard within the same octave (well, one octave and the very begining of the next).
         Self.Sub_program = Sub_program # Can take on values between 1-5. This could be extended, but with 5 different sub programs, they can all be accessed via the black keys on piano keyboard within the same octave.
         Self.Parameter1 = Parameter1 # Can take on values between 0-127.
         Self.Parameter2 = Parameter2 # Can take on values between 0-127.
@@ -340,48 +371,94 @@ with DMXInterface("FT232R") as interface:
                                 if(Layer2.Sub_program == 1):
                                     for Count in range(len(Layer1.Array_of_Layer1_objects)):
                                         Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
-                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC1), After_decay_amplitude=CC_to_ratio(CC1), Attack=0, Decay=0, Sustain=2, Release=2), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
-                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC2), After_decay_amplitude=CC_to_ratio(CC2), Attack=0, Decay=0, Sustain=2, Release=2), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
-                                            Brightness = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=CC_to_ratio(CC4), Attack=CC_to_ratio(CC5), Decay=CC_to_ratio(CC6), Sustain=CC_to_ratio(CC7), Release=CC_to_ratio(CC8)), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
+                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC1), After_decay_amplitude=CC_to_ratio(CC1), Attack=0, Decay=0, Sustain=2, Release=2, Ignore_go_to_release_phase=False), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC2), After_decay_amplitude=CC_to_ratio(CC2), Attack=0, Decay=0, Sustain=2, Release=2, Ignore_go_to_release_phase=False), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC3), After_decay_amplitude=CC_to_ratio(CC4), Attack=CC_to_ratio(CC5), Decay=CC_to_ratio(CC6), Sustain=2.0, Release=CC_to_ratio(CC7), Ignore_go_to_release_phase=CC_to_boolean(CC8)), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
                                         )
                                         
                                 elif(Layer2.Sub_program == 2):
                                     for Count in range(int(len(Layer1.Array_of_Layer1_objects)/2)):
                                         Layer1.Array_of_Layer1_objects[int(Count + len(Layer1.Array_of_Layer1_objects)/2)] = Layer1_light_object(
-                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC1), After_decay_amplitude=CC_to_ratio(CC1), Attack=0, Decay=0, Sustain=2, Release=2), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
-                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC2), After_decay_amplitude=CC_to_ratio(CC2), Attack=0, Decay=0, Sustain=2, Release=2), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
-                                            Brightness = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=CC_to_ratio(CC4), Attack=CC_to_ratio(CC5), Decay=CC_to_ratio(CC6), Sustain=CC_to_ratio(CC7), Release=CC_to_ratio(CC8)), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
+                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC1), After_decay_amplitude=CC_to_ratio(CC1), Attack=0, Decay=0, Sustain=2, Release=2, Ignore_go_to_release_phase=False), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC2), After_decay_amplitude=CC_to_ratio(CC2), Attack=0, Decay=0, Sustain=2, Release=2, Ignore_go_to_release_phase=False), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC3), After_decay_amplitude=CC_to_ratio(CC4), Attack=CC_to_ratio(CC5), Decay=CC_to_ratio(CC6), Sustain=2.0, Release=CC_to_ratio(CC7), Ignore_go_to_release_phase=CC_to_boolean(CC8)), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
                                         )
                                         
                                 elif(Layer2.Sub_program == 3):
                                     for Count in range(int(len(Layer1.Array_of_Layer1_objects)/2)):
                                         Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
-                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC1), After_decay_amplitude=CC_to_ratio(CC1), Attack=0, Decay=0, Sustain=2, Release=2), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
-                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC2), After_decay_amplitude=CC_to_ratio(CC2), Attack=0, Decay=0, Sustain=2, Release=2), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
-                                            Brightness = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=CC_to_ratio(CC4), Attack=CC_to_ratio(CC5), Decay=CC_to_ratio(CC6), Sustain=CC_to_ratio(CC7), Release=CC_to_ratio(CC8)), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
+                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC1), After_decay_amplitude=CC_to_ratio(CC1), Attack=0, Decay=0, Sustain=2, Release=2, Ignore_go_to_release_phase=False), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC2), After_decay_amplitude=CC_to_ratio(CC2), Attack=0, Decay=0, Sustain=2, Release=2, Ignore_go_to_release_phase=False), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC3), After_decay_amplitude=CC_to_ratio(CC4), Attack=CC_to_ratio(CC5), Decay=CC_to_ratio(CC6), Sustain=2.0, Release=CC_to_ratio(CC7), Ignore_go_to_release_phase=CC_to_boolean(CC8)), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
                                         )
+                                
+                                elif(Layer2.Sub_program == 4):
+                                    for Count in range(int(len(Layer1.Array_of_Layer1_objects)/4)):
+                                        Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
+                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC1), After_decay_amplitude=CC_to_ratio(CC1), Attack=0, Decay=0, Sustain=2, Release=2, Ignore_go_to_release_phase=False), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC2), After_decay_amplitude=CC_to_ratio(CC2), Attack=0, Decay=0, Sustain=2, Release=2, Ignore_go_to_release_phase=False), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC3), After_decay_amplitude=CC_to_ratio(CC4), Attack=CC_to_ratio(CC5), Decay=CC_to_ratio(CC6), Sustain=2.0, Release=CC_to_ratio(CC7), Ignore_go_to_release_phase=CC_to_boolean(CC8)), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
+                                        )
+                                        Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*3] = Layer1_light_object(
+                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC1), After_decay_amplitude=CC_to_ratio(CC1), Attack=0, Decay=0, Sustain=2, Release=2, Ignore_go_to_release_phase=False), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC2), After_decay_amplitude=CC_to_ratio(CC2), Attack=0, Decay=0, Sustain=2, Release=2, Ignore_go_to_release_phase=False), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC3), After_decay_amplitude=CC_to_ratio(CC4), Attack=CC_to_ratio(CC5), Decay=CC_to_ratio(CC6), Sustain=2.0, Release=CC_to_ratio(CC7), Ignore_go_to_release_phase=CC_to_boolean(CC8)), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
+                                        )
+                                
+                                elif(Layer2.Sub_program == 5):
+                                    for Count in range(int(len(Layer1.Array_of_Layer1_objects)/4)):
+                                        Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*1] = Layer1_light_object(
+                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC1), After_decay_amplitude=CC_to_ratio(CC1), Attack=0, Decay=0, Sustain=2, Release=2, Ignore_go_to_release_phase=False), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC2), After_decay_amplitude=CC_to_ratio(CC2), Attack=0, Decay=0, Sustain=2, Release=2, Ignore_go_to_release_phase=False), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC3), After_decay_amplitude=CC_to_ratio(CC4), Attack=CC_to_ratio(CC5), Decay=CC_to_ratio(CC6), Sustain=2.0, Release=CC_to_ratio(CC7), Ignore_go_to_release_phase=CC_to_boolean(CC8)), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
+                                        )
+                                        Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*2] = Layer1_light_object(
+                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC1), After_decay_amplitude=CC_to_ratio(CC1), Attack=0, Decay=0, Sustain=2, Release=2, Ignore_go_to_release_phase=False), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC2), After_decay_amplitude=CC_to_ratio(CC2), Attack=0, Decay=0, Sustain=2, Release=2, Ignore_go_to_release_phase=False), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0)),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC3), After_decay_amplitude=CC_to_ratio(CC4), Attack=CC_to_ratio(CC5), Decay=CC_to_ratio(CC6), Sustain=2.0, Release=CC_to_ratio(CC7), Ignore_go_to_release_phase=CC_to_boolean(CC8)), LFO(Waveform="Sine", Amplitude=0, Repeat=True, Rate=0, Phase=0))
+                                        )
+                    
                                 
                     if(msg.type == 'note_off' or (msg.type == 'note_on' and msg.velocity == 0)): # On Syntakt, note off is sent by sending note on with a velocity of 0.
                         if(Layer2.Main_program == 1):
                             
                             if(Layer2.Sub_program == 1):
                                 for Count in range(len(Layer1.Array_of_Layer1_objects)):
-                                    Layer1.Array_of_Layer1_objects[Count].Hue.ADSR.Progress = 0.75
-                                    Layer1.Array_of_Layer1_objects[Count].Saturation.ADSR.Progress = 0.75
-                                    Layer1.Array_of_Layer1_objects[Count].Brightness.ADSR.Progress = 0.75
+                                    Layer1.Array_of_Layer1_objects[Count].Hue.ADSR.Go_to_release_phase = True
+                                    Layer1.Array_of_Layer1_objects[Count].Saturation.ADSR.Go_to_release_phase = True
+                                    Layer1.Array_of_Layer1_objects[Count].Brightness.ADSR.Go_to_release_phase = True
                                     
                             if(Layer2.Sub_program == 2):
                                 for Count in range(int(len(Layer1.Array_of_Layer1_objects)/2)):
-                                    Layer1.Array_of_Layer1_objects[int(Count + len(Layer1.Array_of_Layer1_objects)/2)].Hue.ADSR.Progress = 0.75
-                                    Layer1.Array_of_Layer1_objects[int(Count + len(Layer1.Array_of_Layer1_objects)/2)].Saturation.ADSR.Progress = 0.75
-                                    Layer1.Array_of_Layer1_objects[int(Count + len(Layer1.Array_of_Layer1_objects)/2)].Brightness.ADSR.Progress = 0.75
+                                    Layer1.Array_of_Layer1_objects[int(Count + len(Layer1.Array_of_Layer1_objects)/2)].Hue.ADSR.Go_to_release_phase = True
+                                    Layer1.Array_of_Layer1_objects[int(Count + len(Layer1.Array_of_Layer1_objects)/2)].Saturation.ADSR.Go_to_release_phase = True
+                                    Layer1.Array_of_Layer1_objects[int(Count + len(Layer1.Array_of_Layer1_objects)/2)].Brightness.ADSR.Go_to_release_phase = True
                                     
                             if(Layer2.Sub_program == 3):
                                 for Count in range(int(len(Layer1.Array_of_Layer1_objects)/2)):
-                                    Layer1.Array_of_Layer1_objects[Count].Hue.ADSR.Progress = 0.75
-                                    Layer1.Array_of_Layer1_objects[Count].Saturation.ADSR.Progress = 0.75
-                                    Layer1.Array_of_Layer1_objects[Count].Brightness.ADSR.Progress = 0.75
+                                    Layer1.Array_of_Layer1_objects[Count].Hue.ADSR.Go_to_release_phase = True
+                                    Layer1.Array_of_Layer1_objects[Count].Saturation.ADSR.Go_to_release_phase = True
+                                    Layer1.Array_of_Layer1_objects[Count].Brightness.ADSR.Go_to_release_phase = True
+                              
+                            if(Layer2.Sub_program == 4):
+                                for Count in range(int(len(Layer1.Array_of_Layer1_objects)/4)):
+                                    Layer1.Array_of_Layer1_objects[Count].Hue.ADSR.Go_to_release_phase = True
+                                    Layer1.Array_of_Layer1_objects[Count].Saturation.ADSR.Go_to_release_phase = True
+                                    Layer1.Array_of_Layer1_objects[Count].Brightness.ADSR.Go_to_release_phase = True         
+                                    Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*3].Hue.ADSR.Go_to_release_phase = True
+                                    Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*3].Saturation.ADSR.Go_to_release_phase = True
+                                    Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*3].Brightness.ADSR.Go_to_release_phase = True
+
                                 
+                            if(Layer2.Sub_program == 5):
+                                for Count in range(int(len(Layer1.Array_of_Layer1_objects)/4)):
+                                    Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*1].Hue.ADSR.Go_to_release_phase = True
+                                    Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*1].Saturation.ADSR.Go_to_release_phase = True
+                                    Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*1].Brightness.ADSR.Go_to_release_phase = True
+                                    Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*2].Hue.ADSR.Go_to_release_phase = True
+                                    Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*2].Saturation.ADSR.Go_to_release_phase = True
+                                    Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*2].Brightness.ADSR.Go_to_release_phase = True
+                                        
                 ### ### Program 2: Random start of random lights.
                 if(msg.note == 62): # Only respond to D4.
                     
@@ -400,9 +477,9 @@ with DMXInterface("FT232R") as interface:
                     if(msg.type == 'note_off' or (msg.type == 'note_on' and msg.velocity == 0)): # On Syntakt, note off is sent by sending note on with a velocity of 0.
                         if(Layer2.Main_program == 1):
                             for Count in range(len(Layer1.Array_of_Layer1_objects)):
-                                Layer1.Array_of_Layer1_objects[Count].Hue.ADSR.Progress = 1.0
-                                Layer1.Array_of_Layer1_objects[Count].Saturation.ADSR.Progress = 1.0
-                                Layer1.Array_of_Layer1_objects[Count].Brightness.ADSR.Progress = 1.0
+                                Layer1.Array_of_Layer1_objects[Count].Hue.ADSR.Go_to_release_phase = True
+                                Layer1.Array_of_Layer1_objects[Count].Saturation.ADSR.Go_to_release_phase = True
+                                Layer1.Array_of_Layer1_objects[Count].Brightness.ADSR.Go_to_release_phase = True
                                     
             # Basis for what eventually will be turned into a mediator between Layer1 and Layer0.
             Layer1.Update()
