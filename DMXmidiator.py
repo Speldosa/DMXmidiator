@@ -19,6 +19,7 @@ Max_Decay_cycles = 128
 Max_Sustain_cycles = 128
 Max_Release_cycles = 128
 Max_LFO_cycles = 256
+Clock_ticks_per_cycle = 4
 
 ############################
 ### Function definitions ###
@@ -307,16 +308,26 @@ with DMXInterface("FT232R") as interface:
     CC7 = 64
     CC8 = 64    
         
+    a = 0
+    start_time = time.perf_counter()
     # with mido.open_input('Roland Digital Piano:Roland Digital Piano MIDI 1 36:0') as inport:
     with mido.open_input('Elektron Syntakt:Elektron Syntakt MIDI 1 32:0') as inport:
 
         while True:
+            
             waiting_cc_messages = []
             waiting_white_note_messages = []
             waiting_black_note_messages = []
+            # b = 0
             for msg in inport.iter_pending():
+                if(msg.type == 'clock'):
+                    print(time.perf_counter() - start_time)
+                    # a = a + 1
+                    # b = b + 1
+                    # print(a)
+                    # print(b)
                 if(msg.type == 'control_change'):
-                    print(msg)
+                    # print(msg)
                     waiting_cc_messages.append(msg)
                 elif hasattr(msg, 'note'):
                     if(msg.note == 60 or msg.note == 62 or msg.note == 64 or msg.note == 65 or msg.note == 67 or msg.note == 69 or msg.note == 71):
@@ -358,7 +369,7 @@ with DMXInterface("FT232R") as interface:
                     Layer2.Sub_program = 5
 
             for msg in waiting_white_note_messages:
-            
+                print(msg)
                 ### Program (white keys).
                 
                 ### ### Program 1: Whole field with ADSR, Sustain level, and HSV settings from CC.
