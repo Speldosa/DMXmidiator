@@ -19,7 +19,7 @@ Max_Decay_cycles = 128
 Max_Sustain_cycles = 128
 Max_Release_cycles = 128
 Max_LFO_cycles = 256
-Clock_ticks_per_cycle = 4
+Clock_ticks_per_cycle = 3
 
 ############################
 ### Function definitions ###
@@ -313,31 +313,28 @@ with DMXInterface("FT232R") as interface:
     # with mido.open_input('Roland Digital Piano:Roland Digital Piano MIDI 1 36:0') as inport:
     with mido.open_input('Elektron Syntakt:Elektron Syntakt MIDI 1 32:0') as inport:
 
+        Buffer = []
+
         while True:
-            
-            waiting_cc_messages = []
-            waiting_white_note_messages = []
-            waiting_black_note_messages = []
-            # b = 0
-            for msg in inport.iter_pending():
+            Waiting_cc_messages = []
+            Waiting_white_note_messages = []
+            Waiting_black_note_messages = []
+            Waiting_clock_messages = []
+                      
+            ### Make an initial sort of all messages in the buffer into different categories.      
+            for msg in Buffer:
                 if(msg.type == 'clock'):
-                    print(time.perf_counter() - start_time)
-                    # a = a + 1
-                    # b = b + 1
-                    # print(a)
-                    # print(b)
+                    Waiting_clock_messages.append(msg)
                 if(msg.type == 'control_change'):
-                    # print(msg)
-                    waiting_cc_messages.append(msg)
+                    Waiting_cc_messages.append(msg)
                 elif hasattr(msg, 'note'):
                     if(msg.note == 60 or msg.note == 62 or msg.note == 64 or msg.note == 65 or msg.note == 67 or msg.note == 69 or msg.note == 71):
-                        print(msg)
-                        waiting_white_note_messages.append(msg)
+                        Waiting_white_note_messages.append(msg)
                     elif(msg.note == 61 or msg.note == 63 or msg.note == 66 or msg.note == 68 or msg.note == 70):
-                        print(msg)
-                        waiting_black_note_messages.append(msg)
+                        Waiting_black_note_messages.append(msg)
 
-            for msg in waiting_cc_messages:
+            ### Handle all waiting cc messages.
+            for msg in Waiting_cc_messages:
                 if(msg.control == 70):
                     CC1 = msg.value
                 elif(msg.control == 71):
@@ -355,8 +352,8 @@ with DMXInterface("FT232R") as interface:
                 elif(msg.control == 77):
                     CC8 = msg.value
 
-            for msg in waiting_black_note_messages:
-                # Sub program (black keys).
+            ### Handle all waiting black note messages.
+            for msg in Waiting_black_note_messages:
                 if(msg.note == 61):
                     Layer2.Sub_program = 1
                 elif(msg.note == 63):
@@ -368,8 +365,8 @@ with DMXInterface("FT232R") as interface:
                 elif(msg.note == 70):
                     Layer2.Sub_program = 5
 
-            for msg in waiting_white_note_messages:
-                print(msg)
+            ### Handle all waiting white note messages.
+            for msg in Waiting_white_note_messages:
                 ### Program (white keys).
                 
                 ### ### Program 1: Whole field with ADSR, Sustain level, and HSV settings from CC.
@@ -382,7 +379,6 @@ with DMXInterface("FT232R") as interface:
                 ### ### ### CC7: Release time
                 ### ### ### CC8: Ignore note off messages (Less than 63 means "No"; more than 63 means "Yes"). Just run a full ADR cycle no matter if there are note off messages.
                 if(msg.note == 60): # Only respond to C4.
-                    
                     if(msg.type == 'note_on' and msg.velocity > 0):
                         for Count in range(Number_of_lights):
                             if(Layer2.Main_program == 1):
@@ -499,7 +495,21 @@ with DMXInterface("FT232R") as interface:
                                 Layer1.Array_of_Layer1_objects[Count].Hue.ADSR.Go_to_release_phase = True
                                 Layer1.Array_of_Layer1_objects[Count].Saturation.ADSR.Go_to_release_phase = True
                                 Layer1.Array_of_Layer1_objects[Count].Brightness.ADSR.Go_to_release_phase = True
-                                    
+            
+            ### Clear the buffer
+            Buffer = []
+                
+            ### Stay in this loop until the total amount of clock messages have passed the thresshold for moving on.
+            while True:
+                for msg in inport.iter_pending():
+                    if(msg.type == 'clock'):
+                        Waiting_clock_messages.append(msg)
+                    else:
+                        Buffer.append(msg)
+                if(len(Waiting_clock_messages) >= Clock_ticks_per_cycle):
+                    print(len(Waiting_clock_messages))
+                    break
+                    
             # Basis for what eventually will be turned into a mediator between Layer1 and Layer0.
             Layer1.Update()
             for Light_number in range(len(Layer0.Array_of_lights)):
