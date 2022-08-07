@@ -12,13 +12,40 @@ import colorsys
 ### Global variables ###
 ########################
 Number_of_lights = 32
+Clock_ticks_per_cycle = 2
+
 Max_brightness = 128 #In DMX value. So the minumum is 0 and the maximum is 255.
 Max_Attack_cycles = 128
 Max_Decay_cycles = 128
 Max_Sustain_cycles = 128
 Max_Release_cycles = 128
 Max_LFO_cycles = 128
-Clock_ticks_per_cycle = 2
+
+Main_program_1_note = 60
+Main_program_2_note = 62
+Main_program_3_note = 64
+Main_program_4_note = 65
+Main_program_5_note = 67
+Main_program_6_note = 69
+Main_program_7_note = 71
+Main_program_8_note = 72
+Main_program_notes = [Main_program_1_note, Main_program_2_note, Main_program_3_note, Main_program_4_note, Main_program_5_note, Main_program_6_note, Main_program_7_note, Main_program_8_note]
+
+Sub_program_1_note = 61
+Sub_program_2_note = 63
+Sub_program_3_note = 66
+Sub_program_4_note = 68
+Sub_program_5_note = 70
+Sub_program_notes = [Sub_program_1_note, Sub_program_2_note, Sub_program_3_note, Sub_program_4_note, Sub_program_5_note]
+
+Parameter_1_cc = 70
+Parameter_2_cc = 71
+Parameter_3_cc = 72
+Parameter_4_cc = 73
+Parameter_5_cc = 74
+Parameter_6_cc = 75
+Parameter_7_cc = 76
+Parameter_8_cc = 77
 
 ############################
 ### Function definitions ###
@@ -220,23 +247,13 @@ class LFO:
 class Layer2:
     def __init__(Self, Number_of_lights, Main_program, Sub_program, Parameter1, Parameter2, Parameter3, Parameter4, Parameter5, Parameter6, Parameter7, Parameter8):
         Self.Number_of_lights = Number_of_lights
-        Self.Main_program = Main_program # Can take on values between 1-8. This could be extended, but with 8 different programs, they can all be accessed via the white keys on piano keyboard within the same octave (well, one octave and the very begining of the next).
-        Self.Sub_program = Sub_program # Can take on values between 1-5. This could be extended, but with 5 different sub programs, they can all be accessed via the black keys on piano keyboard within the same octave.
-        Self.Parameter1 = Parameter1 # Can take on values between 0-127.
-        Self.Parameter2 = Parameter2 # Can take on values between 0-127.
-        Self.Parameter3 = Parameter3 # Can take on values between 0-127.
-        Self.Parameter4 = Parameter4 # Can take on values between 0-127.
-        Self.Parameter5 = Parameter5 # Can take on values between 0-127.
-        Self.Parameter6 = Parameter6 # Can take on values between 0-127.
-        Self.Parameter7 = Parameter7 # Can take on values between 0-127.
-        Self.Parameter8 = Parameter8 # Can take on values between 0-127.
-
+        Self.Program = [[Main_program, Sub_program], "Same"] # Main_program can take on values between 1-8. This could be extended, but with 8 different programs, they can all be accessed via the white keys on piano keyboard within the same octave (well, one octave and the very begining of the next). Sub_program can take on values between 1-5. This could be extended, but with 5 different sub programs, they can all be accessed via the black keys on piano keyboard within the same octave.
+        Self.Parameters = [[Parameter1, "Same"], [Parameter2, "Same"], [Parameter3, "Same"], [Parameter4, "Same"], [Parameter5, "Same"], [Parameter6, "Same"], [Parameter7, "Same"], [Parameter8, "Same"]]
 
 #######################
 ### Useful commands ###
 #######################
-print(mido.get_input_names()) # Get a list of all available input ports.
-
+# print(mido.get_input_names()) # Get a list of all available input ports.
 
 ####################
 ### Main program ###
@@ -254,41 +271,80 @@ with DMXInterface("FT232R") as interface:
     ### Initialize a Layer2.
     Layer2 = Layer2(
         Number_of_lights = Number_of_lights,
-        Main_program = [],
-        Sub_program = [],
-        # Quit_main_program = [], # Hmm... I have to think about this one.
-        # Quit_sub_program = [], # Hmm... I have to think about this one.
-        Parameter1 = 0,
-        Parameter2 = 0,
-        Parameter3 = 0,
-        Parameter4 = 0,
-        Parameter5 = 0,
-        Parameter6 = 0,
-        Parameter7 = 0,
-        Parameter8 = 0
-    )   
-        
-    CC1 = 64
-    CC2 = 64
-    CC3 = 64
-    CC4 = 64
-    CC5 = 64
-    CC6 = 64
-    CC7 = 64
-    CC8 = 64    
-        
-    # with mido.open_input('Roland Digital Piano:Roland Digital Piano MIDI 1 36:0') as inport:
-    with mido.open_input('Elektron Syntakt:Elektron Syntakt MIDI 1 32:0') as inport:
+        Program = [[None, None], "Same"]
+        Parameters = [[64, "Same"], [64, "Same"], [64, "Same"], [64, "Same"], [64, "Same"], [64, "Same"], [64, "Same"], [64, "Same"]]
+    )
+         
+    with mido.open_input('Roland Digital Piano:Roland Digital Piano MIDI 1 36:0') as inport:
+    # with mido.open_input('Elektron Syntakt:Elektron Syntakt MIDI 1 32:0') as inport:
 
         Buffer = []
 
         while True:
-            Waiting_cc_messages = []
-            Waiting_white_note_on_messages = []
-            Waiting_white_note_off_messages = []
-            Waiting_black_note_messages = []
             Waiting_clock_messages = []
-                      
+
+            for msg in Buffer:
+                if(msg.type == 'clock'):
+                    Waiting_clock_messages.append(msg)
+                
+                elif(msg.type == 'control_change'):
+                     if(msg.control == Parameter_1_cc):
+                        Layer2.Parameters[0][0] = msg.value
+                        Layer2.Parameters[0][1] = "Changed"
+                     elif(msg.control == Parameter_2_cc):
+                        Layer2.Parameters[1][0] = msg.value
+                        Layer2.Parameters[1][1] = "Changed"
+                     elif(msg.control == Parameter_3_cc):
+                        Layer2.Parameters[2][0] = msg.value
+                        Layer2.Parameters[2][1] = "Changed"
+                     elif(msg.control == Parameter_4_cc):
+                        Layer2.Parameters[3][0] = msg.value
+                        Layer2.Parameters[3][1] = "Changed"
+                     elif(msg.control == Parameter_5_cc):
+                        Layer2.Parameters[4][0] = msg.value
+                        Layer2.Parameters[4][1] = "Changed"
+                     elif(msg.control == Parameter_6_cc):
+                        Layer2.Parameters[5][0] = msg.value
+                        Layer2.Parameters[5][1] = "Changed"
+                     elif(msg.control == Parameter_7_cc):
+                        Layer2.Parameters[6][0] = msg.value
+                        Layer2.Parameters[6][1] = "Changed"
+                     elif(msg.control == Parameter_8_cc):
+                        Layer2.Parameters[7][0] = msg.value
+                        Layer2.Parameters[7][1] = "Changed"
+                
+                elif hasattr(msg, 'note'): # If the message is a note event...
+                    if(msg.type == 'note_on' and msg.velocity > 0): # If the note is a note on event...
+                        if(msg.note in Main_program_notes):
+                            pass
+                        elif(msg.note in Sub_program_notes):
+                            pass
+                    else:
+                        pass # Else (that is, the note is a note off event)...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                     
+
+
+
+
             ### Make an initial sort of all messages in the buffer into different categories.      
             for msg in Buffer:
                 if(msg.type == 'clock'):
@@ -302,7 +358,10 @@ with DMXInterface("FT232R") as interface:
                         else:
                             Waiting_white_note_off_messages.append(msg)
                     elif(msg.note == 61 or msg.note == 63 or msg.note == 66 or msg.note == 68 or msg.note == 70):
-                        Waiting_black_note_messages.append(msg)
+                        if(msg.type == 'note_on' and msg.velocity > 0):
+                            Waiting_black_note_on_messages.append(msg)
+                        else:
+                            Waiting_black_note_off_messages.append(msg)
 
             ### Handle all waiting cc messages.
             for msg in Waiting_cc_messages:
@@ -323,6 +382,19 @@ with DMXInterface("FT232R") as interface:
                 elif(msg.control == 77):
                     CC8 = msg.value
 
+            ### Handle all waiting black note on messages.
+            for msg in Waiting_black_note_on_messages:
+                if(msg.note == 61):
+                    Layer2.Sub_program = 1
+                elif(msg.note == 63):
+                    Layer2.Sub_program = 2
+                elif(msg.note == 66):
+                    Layer2.Sub_program = 3
+                elif(msg.note == 68):
+                    Layer2.Sub_program = 4
+                elif(msg.note == 70):
+                    Layer2.Sub_program = 5
+            
             ### Handle all waiting white note off messages.
 #             for msg in Waiting_white_note_off_messages:
 #                 if(msg.note == 60):
@@ -342,19 +414,6 @@ with DMXInterface("FT232R") as interface:
 #                 elif(msg.note == 72):
 #                     Layer2.Quit_main_program.append(8)
 
-            ### Handle all waiting black note messages.
-            for msg in Waiting_black_note_messages:
-                if(msg.note == 61):
-                    Layer2.Sub_program = 1
-                elif(msg.note == 63):
-                    Layer2.Sub_program = 2
-                elif(msg.note == 66):
-                    Layer2.Sub_program = 3
-                elif(msg.note == 68):
-                    Layer2.Sub_program = 4
-                elif(msg.note == 70):
-                    Layer2.Sub_program = 5
-            
             ### Handle all waiting white note on messages.
             for msg in Waiting_white_note_on_messages:
                 ### Program (white keys).
