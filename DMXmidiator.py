@@ -2,24 +2,30 @@
 ### Import packages ###
 #######################
 from dmx import Colour, DMXInterface, DMXLight3Slot, DMXUniverse
+from math import sin
+from colorsys import hsv_to_rgb
 import mido
-import math
-import colorsys
+
 ### Used for debugging.
 # import time # Then sse time.perf_counter() to get the current time.
 
-########################
-### Global variables ###
-########################
-Number_of_lights = 32
-Clock_ticks_per_cycle = 2
+#######################
+### Useful commands ###
+#######################
+# print(mido.get_input_names()) # Get a list of all available input ports.
 
-Max_brightness = 128 #In DMX value. So the minumum is 0 and the maximum is 255.
-Max_Attack_cycles = 128
-Max_Decay_cycles = 128
-Max_Sustain_cycles = 128
-Max_Release_cycles = 128
-Max_LFO_cycles = 128
+#################################################
+### Global variables that can be manually set ###
+#################################################
+Number_of_lights = 32 # How many individually controllable lights you want to control. Right now, you should also change the number of channels in the dmx/constants.py file. Failure to do so can slow down the program since uncesscary commands then are being sent out.
+Clock_ticks_per_cycle = 2 # How many ticks (one quarter note consists of 24 ticks) one cycle of the program should consist off. Lower values means lower latency, but if the value is set to low, cycles might become uneven in length.
+
+Max_brightness = 128 # In DMX value. So the minumum is 0 and the maximum is 255.
+Max_Attack_cycles = 128 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks the attack phase can be.
+Max_Decay_cycles = 128 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks the decay phase can be.
+Max_Sustain_cycles = 128 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks the sustain phase can be.
+Max_Release_cycles = 128 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks the release phase can be.
+Max_LFO_cycles = 128 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks a complete LFO phase can be.
 
 Main_program_0_note = 60
 Main_program_1_note = 62
@@ -29,14 +35,12 @@ Main_program_4_note = 67
 Main_program_5_note = 69
 Main_program_6_note = 71
 Main_program_7_note = 72
-Main_program_notes = [Main_program_0_note, Main_program_1_note, Main_program_2_note, Main_program_3_note, Main_program_4_note, Main_program_5_note, Main_program_6_note, Main_program_7_note]
 
 Sub_program_0_note = 61
 Sub_program_1_note = 63
 Sub_program_2_note = 66
 Sub_program_3_note = 68
 Sub_program_4_note = 70
-Sub_program_notes = [Sub_program_0_note, Sub_program_1_note, Sub_program_2_note, Sub_program_3_note, Sub_program_4_note]
 
 Parameter_0_cc = 70
 Parameter_1_cc = 71
@@ -46,6 +50,13 @@ Parameter_4_cc = 74
 Parameter_5_cc = 75
 Parameter_6_cc = 76
 Parameter_7_cc = 77
+
+##################################################################################################################################
+### Global variables that are automatically computed based on the manually set global variables above (that is, do not touch!) ###
+##################################################################################################################################
+
+Main_program_notes = [Main_program_0_note, Main_program_1_note, Main_program_2_note, Main_program_3_note, Main_program_4_note, Main_program_5_note, Main_program_6_note, Main_program_7_note]
+Sub_program_notes = [Sub_program_0_note, Sub_program_1_note, Sub_program_2_note, Sub_program_3_note, Sub_program_4_note]
 Parameters_cc = [Parameter_0_cc, Parameter_1_cc, Parameter_2_cc, Parameter_3_cc, Parameter_4_cc, Parameter_5_cc, Parameter_6_cc, Parameter_7_cc] 
 
 ############################
@@ -251,11 +262,6 @@ class Layer2:
         Self.Program = [[Main_program, Sub_program], "Same"] # Main_program can take on values between 1-8. This could be extended, but with 8 different programs, they can all be accessed via the white keys on piano keyboard within the same octave (well, one octave and the very begining of the next). Sub_program can take on values between 1-5. This could be extended, but with 5 different sub programs, they can all be accessed via the black keys on piano keyboard within the same octave.
         Self.Parameters = [[Parameter1, "Same"], [Parameter2, "Same"], [Parameter3, "Same"], [Parameter4, "Same"], [Parameter5, "Same"], [Parameter6, "Same"], [Parameter7, "Same"], [Parameter8, "Same"]]
 
-#######################
-### Useful commands ###
-#######################
-# print(mido.get_input_names()) # Get a list of all available input ports.
-
 ####################
 ### Main program ###
 ####################
@@ -287,114 +293,66 @@ with DMXInterface("FT232R") as interface:
             for msg in Buffer:
                 if(msg.type == 'clock'): # If the message is a clock event...
                     Waiting_clock_messages.append(msg) # Append it to the array of waiting clock messages.
-                
-                elif(msg.type == 'control_change'): # If the message is a cc message...
-                     if(msg.control in Parameters_cc): # If the cc message is part of the parameters cc...
-                        Layer2.Parameters[Parameters_cc.index(msg.control)][1] = Layer2.Parameters[Parameters_cc.index(msg.control)][0] # Move the current cc value for that parameter to the previous cc value for that parameter.
-                        Layer2.Parameters[Parameters_cc.index(msg.control)][0] = msg.value # Set the current cc value to the current cc value for that parameter.
-                
-                elif hasattr(msg, 'note'): # If the message is a note event...
-                    if(msg.type == 'note_on' and msg.velocity > 0): # If the note is a note on event...
-                        if(msg.note in Main_program_notes): # If the note is part of the main program notes...
-                            Layer2.Program[1] = Layer2.Program[0] # Copy current program to previous program.
-                            Layer2.Program[0][0] = Main_program_notes.index(msg.note) # Set main program part of current program.
-                        elif(msg.note in Sub_program_notes): # Else, if the note is part of the sub program notes...
-                            Layer2.Program[1] = Layer2.Program[0] # Copy current program to previous program.
-                            Layer2.Program[0][1] = Sub_program_notes.index(msg.note) # Set sub program part of current program.
-                    else: # If the note is a note off event...
-                        if(msg.note in Main_program_notes): # If the note is part of the main program notes...
-                            if(Layer2.Program[0][0] == Main_program_notes.index(msg.note)): # If the note is a note off command for a main program that's already in the current program...
-                                Layer2.Program[1] = Layer2.Program[0] # Move current program to previous program.
-                                Layer2.Program[0][0] = None # Set main program part of the current program to none.
-                        elif(msg.note in Sub_program_notes): # Else, if the note is part of the sub program notes...
-                            if(Layer2.Program[0][1] == Sub_program_notes.index(msg.note)): # If the note is a note off command for a sub program that's already in the current program...
-                                Layer2.Program[1] = Layer2.Program[0] # Move current program to previous program.
-                                Layer2.Program[0][1] = None # Set sub program part of the current program to none.
 
+                else:
+                    if(msg.type == 'control_change'): # If the message is a cc message...
+                        if(msg.control in Parameters_cc): # If the cc message is part of the parameters cc...
+                            Layer2.Parameters[Parameters_cc.index(msg.control)][1] = Layer2.Parameters[Parameters_cc.index(msg.control)][0] # Move the current cc value for that parameter to the previous cc value for that parameter.
+                            Layer2.Parameters[Parameters_cc.index(msg.control)][0] = msg.value # Set the current cc value to the current cc value for that parameter.
+                    
+                    elif hasattr(msg, 'note'): # If the message is a note event...
+                        if(msg.type == 'note_on' and msg.velocity > 0): # If the note is a note on event...
+                            if(msg.note in Main_program_notes): # If the note is part of the main program notes...
+                                Layer2.Program[1] = Layer2.Program[0] # Copy current program to previous program.
+                                Layer2.Program[0][0] = Main_program_notes.index(msg.note) # Set main program part of current program.
+                            elif(msg.note in Sub_program_notes): # Else, if the note is part of the sub program notes...
+                                Layer2.Program[1] = Layer2.Program[0] # Copy current program to previous program.
+                                Layer2.Program[0][1] = Sub_program_notes.index(msg.note) # Set sub program part of current program.
+                        else: # If the note is a note off event...
+                            if(msg.note in Main_program_notes): # If the note is part of the main program notes...
+                                if(Layer2.Program[0][0] == Main_program_notes.index(msg.note)): # If the note is a note off command for a main program that's already in the current program...
+                                    Layer2.Program[1] = Layer2.Program[0] # Move current program to previous program.
+                                    Layer2.Program[0][0] = None # Set main program part of the current program to none.
+                            elif(msg.note in Sub_program_notes): # Else, if the note is part of the sub program notes...
+                                if(Layer2.Program[0][1] == Sub_program_notes.index(msg.note)): # If the note is a note off command for a sub program that's already in the current program...
+                                    Layer2.Program[1] = Layer2.Program[0] # Move current program to previous program.
+                                    Layer2.Program[0][1] = None # Set sub program part of the current program to none.
 
-
-
-
-
-
-
-
-
-
-
-                     
-
-
-
-
-            ### Make an initial sort of all messages in the buffer into different categories.      
-            for msg in Buffer:
-                if(msg.type == 'clock'):
-                    Waiting_clock_messages.append(msg)
-                if(msg.type == 'control_change'):
-                    Waiting_cc_messages.append(msg)
-                elif hasattr(msg, 'note'):
-                    if(msg.note == 60 or msg.note == 62 or msg.note == 64 or msg.note == 65 or msg.note == 67 or msg.note == 69 or msg.note == 71):
-                        if(msg.type == 'note_on' and msg.velocity > 0):
-                            Waiting_white_note_on_messages.append(msg)
-                        else:
-                            Waiting_white_note_off_messages.append(msg)
-                    elif(msg.note == 61 or msg.note == 63 or msg.note == 66 or msg.note == 68 or msg.note == 70):
-                        if(msg.type == 'note_on' and msg.velocity > 0):
-                            Waiting_black_note_on_messages.append(msg)
-                        else:
-                            Waiting_black_note_off_messages.append(msg)
-
-            ### Handle all waiting cc messages.
-            for msg in Waiting_cc_messages:
-                if(msg.control == 70):
-                    CC1 = msg.value
-                elif(msg.control == 71):
-                    CC2 = msg.value
-                elif(msg.control == 72):
-                    CC3 = msg.value
-                elif(msg.control == 73):
-                    CC4 = msg.value
-                elif(msg.control == 74):
-                    CC5 = msg.value
-                elif(msg.control == 75):
-                    CC6 = msg.value
-                elif(msg.control == 76):
-                    CC7 = msg.value
-                elif(msg.control == 77):
-                    CC8 = msg.value
-
-            ### Handle all waiting black note on messages.
-            for msg in Waiting_black_note_on_messages:
-                if(msg.note == 61):
-                    Layer2.Sub_program = 1
-                elif(msg.note == 63):
-                    Layer2.Sub_program = 2
-                elif(msg.note == 66):
-                    Layer2.Sub_program = 3
-                elif(msg.note == 68):
-                    Layer2.Sub_program = 4
-                elif(msg.note == 70):
-                    Layer2.Sub_program = 5
+                    ### Update Layer1 based on the content of Layer2.
+                    pass # I need something more here.
+                    Layer1.Update()
             
-            ### Handle all waiting white note off messages.
-#             for msg in Waiting_white_note_off_messages:
-#                 if(msg.note == 60):
-#                     Layer2.Quit_main_program.append(1)
-#                 elif(msg.note == 62):
-#                     Layer2.Quit_main_program.append(2)
-#                 elif(msg.note == 64):
-#                     Layer2.Quit_main_program.append(3)
-#                 elif(msg.note == 65):
-#                     Layer2.Quit_main_program.append(4)
-#                 elif(msg.note == 67):
-#                     Layer2.Quit_main_program.append(5)
-#                 elif(msg.note == 69):
-#                     Layer2.Quit_main_program.append(6)
-#                 elif(msg.note == 71):
-#                     Layer2.Quit_main_program.append(7)
-#                 elif(msg.note == 72):
-#                     Layer2.Quit_main_program.append(8)
+            ### When all messages in the buffer have been handeled translate the content of Layer1 into Layer0 and light up the lights based on the content of Layer0.
+            for Light_number in range(len(Layer0.Array_of_lights)):
+                Layer0.Set_color(Light_number, Hue=(Layer1.Array_of_Layer1_objects[Light_number].Hue.Current_value % 1), Saturation=Layer1.Array_of_Layer1_objects[Light_number].Saturation.Current_value, Brightness=Layer1.Array_of_Layer1_objects[Light_number].Brightness.Current_value)
+            Layer0.Let_there_be_light()
+
+            ### Then clear the buffer...
+            Buffer = []
+        
+            ### ...and fill up the new buffer until the total amount of clock messages have passed the thresshold for starting from the top of this whole while loop again.
+            while True:
+                for msg in inport.iter_pending():
+                    if(msg.type == 'clock'):
+                        Waiting_clock_messages.append(msg)
+                    else:
+                        Buffer.append(msg)
+                if(len(Waiting_clock_messages) >= Clock_ticks_per_cycle):
+                    break
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
             ### Handle all waiting white note on messages.
             for msg in Waiting_white_note_on_messages:
@@ -506,23 +464,5 @@ with DMXInterface("FT232R") as interface:
                                 Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*2].Brightness.ADSR.Go_to_release_phase = True
                                     
 
-            ### Clear the buffer
-            Buffer = []
-
-            # Basis for what eventually will be turned into a mediator between Layer1 and Layer0.
-            Layer1.Update()
-            for Light_number in range(len(Layer0.Array_of_lights)):
-                Layer0.Set_color(Light_number, Hue=(Layer1.Array_of_Layer1_objects[Light_number].Hue.Current_value % 1), Saturation=Layer1.Array_of_Layer1_objects[Light_number].Saturation.Current_value, Brightness=Layer1.Array_of_Layer1_objects[Light_number].Brightness.Current_value)
-            Layer0.Let_there_be_light()
-
-            ### Stay in this loop until the total amount of clock messages have passed the thresshold for moving on.
-            while True:
-                for msg in inport.iter_pending():
-                    if(msg.type == 'clock'):
-                        Waiting_clock_messages.append(msg)
-                    else:
-                        Buffer.append(msg)
-                if(len(Waiting_clock_messages) >= Clock_ticks_per_cycle):
-                    break
                     
 
