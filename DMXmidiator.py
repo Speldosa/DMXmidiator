@@ -326,9 +326,9 @@ with DMXInterface("FT232R") as interface:
                                 if(Layer2.Program[0][1] == 0): # Sub program 0. All lights on.
                                     for Count in range(len(Layer1.Array_of_Layer1_objects)):
                                         Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
-                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC1), After_decay_amplitude=CC_to_ratio(CC1), Attack=0, Decay=0, Sustain=2, Release=2), LFO()),
-                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC2), After_decay_amplitude=CC_to_ratio(CC2), Attack=0, Decay=0, Sustain=2, Release=2), LFO()),
-                                            Brightness = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC3), After_decay_amplitude=CC_to_ratio(CC4), Attack=CC_to_ratio(CC5), Decay=CC_to_ratio(CC6), Sustain=2.0, Release=CC_to_ratio(CC7), Ignore_go_to_release_phase=CC_to_boolean(CC8)), LFO())
+                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(Layer2.Parameters[0][1]), After_decay_amplitude=CC_to_ratio(Layer2.Parameters[0][1]), Attack=0, Decay=0, Sustain=2, Release=2), LFO()),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(Layer2.Parameters[1][1]), After_decay_amplitude=CC_to_ratio(Layer2.Parameters[1][1]), Attack=0, Decay=0, Sustain=2, Release=2), LFO()),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=CC_to_ratio(Layer2.Parameters[2][1]), After_decay_amplitude=CC_to_ratio(Layer2.Parameters[3][1]), Attack=CC_to_ratio(Layer2.Parameters[4][1]), Decay=CC_to_ratio(Layer2.Parameters[5][1]), Sustain=2.0, Release=CC_to_ratio(Layer2.Parameters[6][1]), Ignore_go_to_release_phase=CC_to_boolean(Layer2.Parameters[7][1])), LFO())
                                         )
                                     
                                 elif(Layer2.Program[0][1] == 1): # Sub program 1. Left half of the lights on.
