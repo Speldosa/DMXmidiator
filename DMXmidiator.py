@@ -257,10 +257,10 @@ class LFO:
             Self.Progress = Self.Progress + 1/LFO_cycles
 
 class Layer2:
-    def __init__(Self, Number_of_lights, Main_program, Sub_program, Parameter1, Parameter2, Parameter3, Parameter4, Parameter5, Parameter6, Parameter7, Parameter8):
+    def __init__(Self, Number_of_lights, Main_program, Sub_program, Parameter0, Parameter1, Parameter2, Parameter3, Parameter4, Parameter5, Parameter6, Parameter7):
         Self.Number_of_lights = Number_of_lights
-        Self.Program = [[Main_program, Sub_program], "Same"] # Main_program can take on values between 1-8. This could be extended, but with 8 different programs, they can all be accessed via the white keys on piano keyboard within the same octave (well, one octave and the very begining of the next). Sub_program can take on values between 1-5. This could be extended, but with 5 different sub programs, they can all be accessed via the black keys on piano keyboard within the same octave.
-        Self.Parameters = [[Parameter1, "Same"], [Parameter2, "Same"], [Parameter3, "Same"], [Parameter4, "Same"], [Parameter5, "Same"], [Parameter6, "Same"], [Parameter7, "Same"], [Parameter8, "Same"]]
+        Self.Program = [[Main_program, Sub_program], [None, None]] # First row represents current program. Second row represents previous program. Main_program can take on values between 1-8. This could be extended, but with 8 different programs, they can all be accessed via the white keys on piano keyboard within the same octave (well, one octave and the very begining of the next). Sub_program can take on values between 1-5. This could be extended, but with 5 different sub programs, they can all be accessed via the black keys on piano keyboard within the same octave.
+        Self.Parameters = [[Parameter0, None], [Parameter1, None], [Parameter2, None], [Parameter3, None], [Parameter4, None], [Parameter5, None], [Parameter6, None], [Parameter7, None]]
 
 ####################
 ### Main program ###
@@ -275,11 +275,7 @@ with DMXInterface("FT232R") as interface:
     Layer1 = Layer1(Number_of_lights = Number_of_lights)
 
     ### Initialize a Layer2.
-    Layer2 = Layer2(
-        Number_of_lights = Number_of_lights,
-        Program = [[None, None], [None, None]] # First row represents current program. Second row represents previous program.
-        Parameters = [[64, None], [64, None], [64, None], [64, None], [64, None], [64, None], [64, None], [64, None]]
-    )
+    Layer2 = Layer2(Number_of_lights = Number_of_lights, Main_program = None, Sub_program = None, Parameter0 = 64, Parameter1 = 64, Parameter2 = 64, Parameter3 = 64, Parameter4 = 64, Parameter5 = 64, Parameter6 = 64, Parameter7 = 64)
          
     with mido.open_input('Roland Digital Piano:Roland Digital Piano MIDI 1 36:0') as inport:
     # with mido.open_input('Elektron Syntakt:Elektron Syntakt MIDI 1 32:0') as inport:
@@ -321,9 +317,10 @@ with DMXInterface("FT232R") as interface:
                     pass # I need something more here.
                     # Layer1.Update()
             
-            ### When all messages in the buffer have been handeled translate the content of Layer1 into Layer0 and light up the lights based on the content of Layer0.
+            ### When all messages in the buffer have been handeled update Layer0 based on the content of Layer1...
             # for Light_number in range(len(Layer0.Array_of_lights)):
             #     Layer0.Set_color(Light_number, Hue=(Layer1.Array_of_Layer1_objects[Light_number].Hue.Current_value % 1), Saturation=Layer1.Array_of_Layer1_objects[Light_number].Saturation.Current_value, Brightness=Layer1.Array_of_Layer1_objects[Light_number].Brightness.Current_value)
+            ### ...and finllay light up the lights based on the content of Layer0.
             # Layer0.Let_there_be_light()
 
             ### Then clear the buffer...
