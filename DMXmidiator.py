@@ -317,23 +317,29 @@ with DMXInterface("FT232R") as interface:
                                     Layer2.Program[2] = Layer2.Program[1] # Copy program currently running to program that should be closed down.
                                     Layer2.Program[0][1] = None # Set sub program part of program that should be implemented to none.
 
-                    ### ### ### Then update Layer1 based on the content of Layer2.
+                    ### ### ### Then update Layer1 based on the content of Layer2. Note that only one operation will be necessary per loop. That is, if a program is to be closed down, there won't be any program to initialize and vice versa.
                     if((Layer2.Program[0][0] is not None) and (Layer2.Program[0][1] is not None)): # If program to be implemented is a complete program (i.e., contains a valid main program and a valid sub program)...
-                        if(Layer2.Program[0] != Layer2.Program[1]): # ...and if program to be implemented isn't the same as what's currently running.    
+                        if(Layer2.Program[0] != Layer2.Program[1]): # ...and if program to be implemented isn't the same as what's currently running (in that case, it has already been initialized).
+                            
                             if(Layer2.Program[0][0] == 0): # Main program 0.
+                                
                                 if(Layer2.Program[0][1] == 0): # Sub program 0.
-                                    Layer2.Program[1] = Layer2.Program[0] # Move the program to be implemented to program that is currently running.
+                                    Layer2.Program[1] = Layer2.Program[0] # Copy the program to be implemented to program that is currently running.
+                                
                                 elif(Layer2.Program[0][1] == 1): # Sub program 1.
-                                    Layer2.Program[1] = Layer2.Program[0] # Move the program to be implemented to program that is currently running.
+                                    Layer2.Program[1] = Layer2.Program[0] # Copy the program to be implemented to program that is currently running.
+                                
                                 elif(Layer2.Program[0][1] == 2): # Sub program 2.
-                                    Layer2.Program[1] = Layer2.Program[0] # Move the program to be implemented to program that is currently running.
+                                    Layer2.Program[1] = Layer2.Program[0] # Copy the program to be implemented to program that is currently running.
+                                
                                 elif(Layer2.Program[0][1] == 3): # Sub program 3.
-                                    Layer2.Program[1] = Layer2.Program[0] # Move the program to be implemented to program that is currently running.
+                                    Layer2.Program[1] = Layer2.Program[0] # Copy the program to be implemented to program that is currently running.
+                                
                                 elif(Layer2.Program[0][1] == 4): # Sub program 4.
-                                    Layer2.Program[1] = Layer2.Program[0] # Move the program to be implemented to program that is currently running.
+                                    Layer2.Program[1] = Layer2.Program[0] # Copy the program to be implemented to program that is currently running.
 
                     elif((Layer2.Program[2][0] is not None) and (Layer2.Program[2][1] is not None)): # If the program to be closed down is a complete program (i.e., contains a valid main program and a valid sub program)...
-                        
+
                         if(Layer2.Program[2][0] == 0): # Main program 0.
 
                             if(Layer2.Program[2][1] == 0): # Sub program 0.
@@ -351,13 +357,6 @@ with DMXInterface("FT232R") as interface:
                             elif(Layer2.Program[2][1] == 4): # Sub program 4.
                                 Layer2.Program[2] = [None, None] # Set the program to be removed to none.
 
-                       
-                        
-
-                    
-                    
-                    
-            
             ### When all messages in the buffer have been handeled... 
             # Layer1.Update() # Update Layer1...
             ####  ...update Layer0 based on the content of Layer1...
