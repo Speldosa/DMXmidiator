@@ -266,7 +266,6 @@ class Layer2:
 ### Main program ###
 ####################
 ### Open an interface
-# with DMXInterface("FT232R") as interface:
 with DMXInterface("FT232R") as interface:
 
     ### Initialize a Layer0.
