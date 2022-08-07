@@ -314,10 +314,13 @@ with DMXInterface("FT232R") as interface:
                                     Layer2.Program[0][1] = None # Set sub program part of the current program to none.
 
                     ### Update Layer1 based on the content of Layer2.
-                    pass # I need something more here.
-                    # Layer1.Update()
+                    
+                    
+                    
             
-            ### When all messages in the buffer have been handeled update Layer0 based on the content of Layer1...
+            ### When all messages in the buffer have been handeled... 
+            # Layer1.Update() # Update Layer1...
+            ####  ...update Layer0 based on the content of Layer1...
             # for Light_number in range(len(Layer0.Array_of_lights)):
             #     Layer0.Set_color(Light_number, Hue=(Layer1.Array_of_Layer1_objects[Light_number].Hue.Current_value % 1), Saturation=Layer1.Array_of_Layer1_objects[Light_number].Saturation.Current_value, Brightness=Layer1.Array_of_Layer1_objects[Light_number].Brightness.Current_value)
             ### ...and finllay light up the lights based on the content of Layer0.
