@@ -18,7 +18,7 @@ import mido
 ### Global variables that can be manually set ###
 #################################################
 Number_of_lights = 32 # How many individually controllable lights you want to control. Right now, you should also change the number of channels in the dmx/constants.py file. Failure to do so can slow down the program since uncesscary commands then are being sent out.
-Clock_ticks_per_cycle = 2 # How many ticks (one quarter note consists of 24 ticks) one cycle of the program should consist off. Lower values means lower latency, but if the value is set to low, cycles might become uneven in length.
+Clock_ticks_per_cycle = 10 # How many ticks (one quarter note consists of 24 ticks) one cycle of the program should consist off. Lower values means lower latency, but if the value is set to low, cycles might become uneven in length.
 
 Max_brightness = 128 # In DMX value. So the minumum is 0 and the maximum is 255.
 Max_Attack_cycles = 128 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks the attack phase can be.
@@ -421,12 +421,12 @@ with DMXInterface("FT232R") as interface:
                         Layer2.Program[2] = [None, None] # Set the program to be removed to none.
 
             ### When all messages in the buffer have been handeled... 
-            # Layer1.Update() # Update Layer1...
+            Layer1.Update() # Update Layer1...
             ####  ...update Layer0 based on the content of Layer1...
-            # for Light_number in range(len(Layer0.Array_of_lights)):
-            #     Layer0.Set_color(Light_number, Hue=(Layer1.Array_of_Layer1_objects[Light_number].Hue.Current_value % 1), Saturation=Layer1.Array_of_Layer1_objects[Light_number].Saturation.Current_value, Brightness=Layer1.Array_of_Layer1_objects[Light_number].Brightness.Current_value)
+            for Light_number in range(len(Layer0.Array_of_lights)):
+                Layer0.Set_color(Light_number, Hue=(Layer1.Array_of_Layer1_objects[Light_number].Hue.Current_value % 1), Saturation=Layer1.Array_of_Layer1_objects[Light_number].Saturation.Current_value, Brightness=Layer1.Array_of_Layer1_objects[Light_number].Brightness.Current_value)
             ### ...and finllay light up the lights based on the content of Layer0.
-            # Layer0.Let_there_be_light()
+            Layer0.Let_there_be_light()
 
             ### Then clear the buffer...
             Buffer = []
