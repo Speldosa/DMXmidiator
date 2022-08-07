@@ -21,31 +21,32 @@ Max_Sustain_cycles = 128
 Max_Release_cycles = 128
 Max_LFO_cycles = 128
 
-Main_program_1_note = 60
-Main_program_2_note = 62
-Main_program_3_note = 64
-Main_program_4_note = 65
-Main_program_5_note = 67
-Main_program_6_note = 69
-Main_program_7_note = 71
-Main_program_8_note = 72
-Main_program_notes = [Main_program_1_note, Main_program_2_note, Main_program_3_note, Main_program_4_note, Main_program_5_note, Main_program_6_note, Main_program_7_note, Main_program_8_note]
+Main_program_0_note = 60
+Main_program_1_note = 62
+Main_program_2_note = 64
+Main_program_3_note = 65
+Main_program_4_note = 67
+Main_program_5_note = 69
+Main_program_6_note = 71
+Main_program_7_note = 72
+Main_program_notes = [Main_program_0_note, Main_program_1_note, Main_program_2_note, Main_program_3_note, Main_program_4_note, Main_program_5_note, Main_program_6_note, Main_program_7_note]
 
-Sub_program_1_note = 61
-Sub_program_2_note = 63
-Sub_program_3_note = 66
-Sub_program_4_note = 68
-Sub_program_5_note = 70
-Sub_program_notes = [Sub_program_1_note, Sub_program_2_note, Sub_program_3_note, Sub_program_4_note, Sub_program_5_note]
+Sub_program_0_note = 61
+Sub_program_1_note = 63
+Sub_program_2_note = 66
+Sub_program_3_note = 68
+Sub_program_4_note = 70
+Sub_program_notes = [Sub_program_0_note, Sub_program_1_note, Sub_program_2_note, Sub_program_3_note, Sub_program_4_note]
 
-Parameter_1_cc = 70
-Parameter_2_cc = 71
-Parameter_3_cc = 72
-Parameter_4_cc = 73
-Parameter_5_cc = 74
-Parameter_6_cc = 75
-Parameter_7_cc = 76
-Parameter_8_cc = 77
+Parameter_0_cc = 70
+Parameter_1_cc = 71
+Parameter_2_cc = 72
+Parameter_3_cc = 73
+Parameter_4_cc = 74
+Parameter_5_cc = 75
+Parameter_6_cc = 76
+Parameter_7_cc = 77
+Parameters_cc = [Parameter_0_cc, Parameter_1_cc, Parameter_2_cc, Parameter_3_cc, Parameter_4_cc, Parameter_5_cc, Parameter_6_cc, Parameter_7_cc] 
 
 ############################
 ### Function definitions ###
@@ -271,8 +272,8 @@ with DMXInterface("FT232R") as interface:
     ### Initialize a Layer2.
     Layer2 = Layer2(
         Number_of_lights = Number_of_lights,
-        Program = [[None, None], "Same"]
-        Parameters = [[64, "Same"], [64, "Same"], [64, "Same"], [64, "Same"], [64, "Same"], [64, "Same"], [64, "Same"], [64, "Same"]]
+        Program = [[None, None], [None, None]] # First row represents current program. Second row represents previous program.
+        Parameters = [[64, None], [64, None], [64, None], [64, None], [64, None], [64, None], [64, None], [64, None]]
     )
          
     with mido.open_input('Roland Digital Piano:Roland Digital Piano MIDI 1 36:0') as inport:
@@ -284,50 +285,31 @@ with DMXInterface("FT232R") as interface:
             Waiting_clock_messages = []
 
             for msg in Buffer:
-                if(msg.type == 'clock'):
-                    Waiting_clock_messages.append(msg)
+                if(msg.type == 'clock'): # If the message is a clock event...
+                    Waiting_clock_messages.append(msg) # Append it to the array of waiting clock messages.
                 
-                elif(msg.type == 'control_change'):
-                     if(msg.control == Parameter_1_cc):
-                        Layer2.Parameters[0][0] = msg.value
-                        Layer2.Parameters[0][1] = "Changed"
-                     elif(msg.control == Parameter_2_cc):
-                        Layer2.Parameters[1][0] = msg.value
-                        Layer2.Parameters[1][1] = "Changed"
-                     elif(msg.control == Parameter_3_cc):
-                        Layer2.Parameters[2][0] = msg.value
-                        Layer2.Parameters[2][1] = "Changed"
-                     elif(msg.control == Parameter_4_cc):
-                        Layer2.Parameters[3][0] = msg.value
-                        Layer2.Parameters[3][1] = "Changed"
-                     elif(msg.control == Parameter_5_cc):
-                        Layer2.Parameters[4][0] = msg.value
-                        Layer2.Parameters[4][1] = "Changed"
-                     elif(msg.control == Parameter_6_cc):
-                        Layer2.Parameters[5][0] = msg.value
-                        Layer2.Parameters[5][1] = "Changed"
-                     elif(msg.control == Parameter_7_cc):
-                        Layer2.Parameters[6][0] = msg.value
-                        Layer2.Parameters[6][1] = "Changed"
-                     elif(msg.control == Parameter_8_cc):
-                        Layer2.Parameters[7][0] = msg.value
-                        Layer2.Parameters[7][1] = "Changed"
+                elif(msg.type == 'control_change'): # If the message is a cc message...
+                     if(msg.control in Parameters_cc): # If the cc message is part of the parameters cc...
+                        Layer2.Parameters[Parameters_cc.index(msg.control)][1] = Layer2.Parameters[Parameters_cc.index(msg.control)][0] # Move the current cc value for that parameter to the previous cc value for that parameter.
+                        Layer2.Parameters[Parameters_cc.index(msg.control)][0] = msg.value # Set the current cc value to the current cc value for that parameter.
                 
                 elif hasattr(msg, 'note'): # If the message is a note event...
                     if(msg.type == 'note_on' and msg.velocity > 0): # If the note is a note on event...
-                        if(msg.note in Main_program_notes):
-                            pass
-                        elif(msg.note in Sub_program_notes):
-                            pass
-                    else:
-                        pass # Else (that is, the note is a note off event)...
-
-
-
-
-
-
-
+                        if(msg.note in Main_program_notes): # If the note is part of the main program notes...
+                            Layer2.Program[1] = Layer2.Program[0] # Copy current program to previous program.
+                            Layer2.Program[0][0] = Main_program_notes.index(msg.note) # Set main program part of current program.
+                        elif(msg.note in Sub_program_notes): # Else, if the note is part of the sub program notes...
+                            Layer2.Program[1] = Layer2.Program[0] # Copy current program to previous program.
+                            Layer2.Program[0][1] = Sub_program_notes.index(msg.note) # Set sub program part of current program.
+                    else: # If the note is a note off event...
+                        if(msg.note in Main_program_notes): # If the note is part of the main program notes...
+                            if(Layer2.Program[0][0] == Main_program_notes.index(msg.note)): # If the note is a note off command for a main program that's already in the current program...
+                                Layer2.Program[1] = Layer2.Program[0] # Move current program to previous program.
+                                Layer2.Program[0][0] = None # Set main program part of the current program to none.
+                        elif(msg.note in Sub_program_notes): # Else, if the note is part of the sub program notes...
+                            if(Layer2.Program[0][1] == Sub_program_notes.index(msg.note)): # If the note is a note off command for a sub program that's already in the current program...
+                                Layer2.Program[1] = Layer2.Program[0] # Move current program to previous program.
+                                Layer2.Program[0][1] = None # Set sub program part of the current program to none.
 
 
 
