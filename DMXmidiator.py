@@ -18,7 +18,7 @@ import mido
 ### Global variables that can be manually set ###
 #################################################
 Number_of_lights = 32 # How many individually controllable lights you want to control. Right now, you should also change the number of channels in the dmx/constants.py file. Failure to do so can slow down the program since uncesscary commands then are being sent out.
-Clock_ticks_per_cycle = 10 # How many ticks (one quarter note consists of 24 ticks) one cycle of the program should consist off. Lower values means lower latency, but if the value is set to low, cycles might become uneven in length.
+Clock_ticks_per_cycle = 2 # How many ticks (one quarter note consists of 24 ticks) one cycle of the program should consist off. Lower values means lower latency, but if the value is set to low, cycles might become uneven in length.
 
 Max_brightness = 128 # In DMX value. So the minumum is 0 and the maximum is 255.
 Max_Attack_cycles = 128 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks the attack phase can be.
@@ -293,7 +293,7 @@ with DMXInterface("FT232R") as interface:
                     Waiting_clock_messages.append(msg) # Append it to the array of waiting clock messages.
 
                 ### ### However, if the midi message coming in is something more interesting (CC message or note message), update Layer2 based on this information.
-                else:
+                elif ((msg.type == 'control_change') or hasattr(msg, 'note')):
                     if(msg.type == 'control_change'): # If the message is a cc message...
                         if(msg.control in Parameters_cc): # If the cc message is part of the parameters cc...
                             Layer2.Parameters[Parameters_cc.index(msg.control)][1] = Layer2.Parameters[Parameters_cc.index(msg.control)][0] # Move the current cc value for that parameter to the previous cc value for that parameter.
@@ -306,17 +306,22 @@ with DMXInterface("FT232R") as interface:
                                 Layer2.Program[0][0] = Main_program_notes.index(msg.note) # Set main program part of program that should be implemented.
                             elif(msg.note in Sub_program_notes): # Else, if the note is part of the sub program notes...
                                 Layer2.Program[2] = Layer2.Program[1] # Copy program currently running to program that should be closed down.
-                                Layer2.Program[0][1] = Sub_program_notes.index(msg.note) # Set main program part of program that should be implemented.
+                                Layer2.Program[0][1] = Sub_program_notes.index(msg.note) # Set sub program part of program that should be implemented.
                         else: # If the note is a note off event...
                             if(msg.note in Main_program_notes): # If the note is part of the main program notes...
+                                if(Layer2.Program[0][0] == Main_program_notes.index(msg.note)): # If the note is a note off command for a main program that's already in the program to be initialized...
+                                    Layer2.Program[0][0] = None #...set it to none.
                                 if(Layer2.Program[1][0] == Main_program_notes.index(msg.note)): # If the note is a note off command for a main program that's already in the current program...
+                                    print("Jag försöker få till denna grej att köra")
                                     Layer2.Program[2] = Layer2.Program[1] # Copy program currently running to program that should be closed down.
                                     Layer2.Program[0][0] = None # Set main program part of program that should be implemented to none.
                             elif(msg.note in Sub_program_notes): # Else, if the note is part of the sub program notes...
+                                if(Layer2.Program[0][1] == Sub_program_notes.index(msg.note)): # If the note is a note off command for a sub program that's already in the program to be initialized...
+                                    Layer2.Program[0][1] = None #...set it to none.
                                 if(Layer2.Program[1][1] == Sub_program_notes.index(msg.note)): # If the note is a note off command for a sub program that's already in the current program...
                                     Layer2.Program[2] = Layer2.Program[1] # Copy program currently running to program that should be closed down.
                                     Layer2.Program[0][1] = None # Set sub program part of program that should be implemented to none.
-
+                    
                     ### ### ### Then update Layer1 based on the content of Layer2. Note that only one operation will be necessary per loop. That is, if a program is to be closed down, there won't be any program to initialize and vice versa.
                     if((Layer2.Program[0][0] is not None) and (Layer2.Program[0][1] is not None)): # If program to be implemented is a complete program (i.e., contains a valid main program and a valid sub program)...
                         if(Layer2.Program[0] != Layer2.Program[1]): # ...and if program to be implemented isn't the same as what's currently running (in that case, it has already been initialized).
@@ -372,11 +377,9 @@ with DMXInterface("FT232R") as interface:
                                             Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(Layer2.Parameters[1][0]), After_decay_amplitude=CC_to_ratio(Layer2.Parameters[1][0]), Attack=0, Decay=0, Sustain=2, Release=2), LFO()),
                                             Brightness = Signal(ADSR(After_attack_amplitude=CC_to_ratio(Layer2.Parameters[2][0]), After_decay_amplitude=CC_to_ratio(Layer2.Parameters[3][0]), Attack=CC_to_ratio(Layer2.Parameters[4][0]), Decay=CC_to_ratio(Layer2.Parameters[5][0]), Sustain=2.0, Release=CC_to_ratio(Layer2.Parameters[6][0]), Ignore_go_to_release_phase=CC_to_boolean(Layer2.Parameters[7][0])), LFO())
                                         )
-
                             Layer2.Program[1] = Layer2.Program[0] # Finally, copy the program to be implemented to program that is currently running.
-
+                            
                     elif((Layer2.Program[2][0] is not None) and (Layer2.Program[2][1] is not None)): # If the program to be closed down is a complete program (i.e., contains a valid main program and a valid sub program)...
-
                         if(Layer2.Program[2][0] == 0): # Main program 0.
 
                             if(Layer2.Program[2][1] == 0): # Sub program 0.
@@ -417,9 +420,11 @@ with DMXInterface("FT232R") as interface:
                                     Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*2].Hue.ADSR.Go_to_release_phase = True
                                     Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*2].Saturation.ADSR.Go_to_release_phase = True
                                     Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*2].Brightness.ADSR.Go_to_release_phase = True
-
-                        Layer2.Program[2] = [None, None] # Set the program to be removed to none.
-
+                        
+                        print(Layer2.Program)
+                        Layer2.Program[2] = [None, None] # Finally, set the program to be removed to none.
+                        print(Layer2.Program)
+                        
             ### When all messages in the buffer have been handeled... 
             Layer1.Update() # Update Layer1...
             ####  ...update Layer0 based on the content of Layer1...
