@@ -259,8 +259,8 @@ class LFO:
 class Layer2:
     def __init__(Self, Number_of_lights, Main_program, Sub_program, Parameter0, Parameter1, Parameter2, Parameter3, Parameter4, Parameter5, Parameter6, Parameter7):
         Self.Number_of_lights = Number_of_lights
-        Self.Program = [[Main_program, Sub_program], [None, None]] # First row represents current program. Second row represents previous program. Main_program can take on values between 1-8. This could be extended, but with 8 different programs, they can all be accessed via the white keys on piano keyboard within the same octave (well, one octave and the very begining of the next). Sub_program can take on values between 1-5. This could be extended, but with 5 different sub programs, they can all be accessed via the black keys on piano keyboard within the same octave.
-        Self.Parameters = [[Parameter0, None], [Parameter1, None], [Parameter2, None], [Parameter3, None], [Parameter4, None], [Parameter5, None], [Parameter6, None], [Parameter7, None]]
+        Self.Program = [[Main_program, Sub_program], [None, None], [None, None]] # First row represents the program that should be implemented. Second row represents the program that it currently running. Third row represents the program that should be closed down. Main_program can take on values between 1-8. This could be extended, but with 8 different programs, they can all be accessed via the white keys on piano keyboard within the same octave (well, one octave and the very begining of the next). Sub_program can take on values between 1-5. This could be extended, but with 5 different sub programs, they can all be accessed via the black keys on piano keyboard within the same octave.
+        Self.Parameters = [[Parameter0, None], [Parameter1, None], [Parameter2, None], [Parameter3, None], [Parameter4, None], [Parameter5, None], [Parameter6, None], [Parameter7, None]] # First row represents the new parameter value. If the second row has a value, that means that that previos value might still be implemented on a lower level (and in that case should be replaced).
 
 ####################
 ### Main program ###
@@ -283,12 +283,16 @@ with DMXInterface("FT232R") as interface:
         Buffer = []
 
         while True:
-            Waiting_clock_messages = []
+            Waiting_clock_messages = [] # Effectively clear the Waiting_clock_messages memory and start over.
 
+            ### Go through each midi message in the buffer and for everytime there is something else than a clock message, first update Layer2 and then update Layer1 based on the content of Layer2.
             for msg in Buffer:
+
+                ### ### If the midi message is just a clock message, record it.
                 if(msg.type == 'clock'): # If the message is a clock event...
                     Waiting_clock_messages.append(msg) # Append it to the array of waiting clock messages.
 
+                ### ### However, if the midi message coming in is something more interesting (CC message or note message), update Layer2 based on this information.
                 else:
                     if(msg.type == 'control_change'): # If the message is a cc message...
                         if(msg.control in Parameters_cc): # If the cc message is part of the parameters cc...
@@ -298,22 +302,58 @@ with DMXInterface("FT232R") as interface:
                     elif hasattr(msg, 'note'): # If the message is a note event...
                         if(msg.type == 'note_on' and msg.velocity > 0): # If the note is a note on event...
                             if(msg.note in Main_program_notes): # If the note is part of the main program notes...
-                                Layer2.Program[1] = Layer2.Program[0] # Copy current program to previous program.
-                                Layer2.Program[0][0] = Main_program_notes.index(msg.note) # Set main program part of current program.
+                                Layer2.Program[2] = Layer2.Program[1] # Copy program currently running to program that should be closed down.
+                                Layer2.Program[0][0] = Main_program_notes.index(msg.note) # Set main program part of program that should be implemented.
                             elif(msg.note in Sub_program_notes): # Else, if the note is part of the sub program notes...
-                                Layer2.Program[1] = Layer2.Program[0] # Copy current program to previous program.
-                                Layer2.Program[0][1] = Sub_program_notes.index(msg.note) # Set sub program part of current program.
+                                Layer2.Program[2] = Layer2.Program[1] # Copy program currently running to program that should be closed down.
+                                Layer2.Program[0][1] = Sub_program_notes.index(msg.note) # Set main program part of program that should be implemented.
                         else: # If the note is a note off event...
                             if(msg.note in Main_program_notes): # If the note is part of the main program notes...
-                                if(Layer2.Program[0][0] == Main_program_notes.index(msg.note)): # If the note is a note off command for a main program that's already in the current program...
-                                    Layer2.Program[1] = Layer2.Program[0] # Move current program to previous program.
-                                    Layer2.Program[0][0] = None # Set main program part of the current program to none.
+                                if(Layer2.Program[1][0] == Main_program_notes.index(msg.note)): # If the note is a note off command for a main program that's already in the current program...
+                                    Layer2.Program[2] = Layer2.Program[1] # Copy program currently running to program that should be closed down.
+                                    Layer2.Program[0][0] = None # Set main program part of program that should be implemented to none.
                             elif(msg.note in Sub_program_notes): # Else, if the note is part of the sub program notes...
-                                if(Layer2.Program[0][1] == Sub_program_notes.index(msg.note)): # If the note is a note off command for a sub program that's already in the current program...
-                                    Layer2.Program[1] = Layer2.Program[0] # Move current program to previous program.
-                                    Layer2.Program[0][1] = None # Set sub program part of the current program to none.
+                                if(Layer2.Program[1][1] == Sub_program_notes.index(msg.note)): # If the note is a note off command for a sub program that's already in the current program...
+                                    Layer2.Program[2] = Layer2.Program[1] # Copy program currently running to program that should be closed down.
+                                    Layer2.Program[0][1] = None # Set sub program part of program that should be implemented to none.
 
-                    ### Update Layer1 based on the content of Layer2.
+                    ### ### ### Then update Layer1 based on the content of Layer2.
+                    if((Layer2.Program[0][0] is not None) and (Layer2.Program[0][1] is not None)): # If program to be implemented is a complete program (i.e., contains a valid main program and a valid sub program)...
+                        if(Layer2.Program[0] != Layer2.Program[1]): # ...and if program to be implemented isn't the same as what's currently running.    
+                            if(Layer2.Program[0][0] == 0): # Main program 0.
+                                if(Layer2.Program[0][1] == 0): # Sub program 0.
+                                    Layer2.Program[1] = Layer2.Program[0] # Move the program to be implemented to program that is currently running.
+                                elif(Layer2.Program[0][1] == 1): # Sub program 1.
+                                    Layer2.Program[1] = Layer2.Program[0] # Move the program to be implemented to program that is currently running.
+                                elif(Layer2.Program[0][1] == 2): # Sub program 2.
+                                    Layer2.Program[1] = Layer2.Program[0] # Move the program to be implemented to program that is currently running.
+                                elif(Layer2.Program[0][1] == 3): # Sub program 3.
+                                    Layer2.Program[1] = Layer2.Program[0] # Move the program to be implemented to program that is currently running.
+                                elif(Layer2.Program[0][1] == 4): # Sub program 4.
+                                    Layer2.Program[1] = Layer2.Program[0] # Move the program to be implemented to program that is currently running.
+
+                    elif((Layer2.Program[2][0] is not None) and (Layer2.Program[2][1] is not None)): # If the program to be closed down is a complete program (i.e., contains a valid main program and a valid sub program)...
+                        
+                        if(Layer2.Program[2][0] == 0): # Main program 0.
+
+                            if(Layer2.Program[2][1] == 0): # Sub program 0.
+                                Layer2.Program[2] = [None, None] # Set the program to be removed to none.
+            
+                            elif(Layer2.Program[2][1] == 1): # Sub program 1.
+                                Layer2.Program[2] = [None, None] # Set the program to be removed to none.
+
+                            elif(Layer2.Program[2][1] == 2): # Sub program 2.
+                                Layer2.Program[2] = [None, None] # Set the program to be removed to none.
+                            ### Sub program 3.
+                            elif(Layer2.Program[2][1] == 3): # Sub program 3.
+                                Layer2.Program[2] = [None, None] # Set the program to be removed to none.
+                            ### Sub program 4.
+                            elif(Layer2.Program[2][1] == 4): # Sub program 4.
+                                Layer2.Program[2] = [None, None] # Set the program to be removed to none.
+
+                       
+                        
+
                     
                     
                     
