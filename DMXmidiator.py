@@ -2,7 +2,7 @@
 ### Import packages ###
 #######################
 from dmx import Colour, DMXInterface, DMXLight3Slot, DMXUniverse
-from math import sin
+from math import sin, pi
 from colorsys import hsv_to_rgb
 import mido
 
@@ -63,7 +63,7 @@ Parameters_cc = [Parameter_0_cc, Parameter_1_cc, Parameter_2_cc, Parameter_3_cc,
 ### Function definitions ###
 ############################
 def hsv_to_dmx_rgb(Hue, Saturation, Value, Max_brightness):
-    Tmp = colorsys.hsv_to_rgb(Hue, Saturation, Value)
+    Tmp = hsv_to_rgb(Hue, Saturation, Value)
     return(Colour(round(Tmp[0]*Max_brightness), round(Tmp[1]*Max_brightness), round(Tmp[2]*Max_brightness)))
 
 def CC_to_ratio(CC_input):
@@ -246,9 +246,9 @@ class LFO:
             if(Self.Repeat):
                 Self.Progress = 0
         if(not Self.Repeat and (round(Self.Progress, 2) >= 1)):
-            Self.Current_value = math.sin(math.pi * 2 * ((0 + (1 * Self.Phase)) % 1)) * Self.Amplitude + 1
+            Self.Current_value = sin(pi * 2 * ((0 + (1 * Self.Phase)) % 1)) * Self.Amplitude + 1
         else:
-            Self.Current_value = math.sin(math.pi * 2 * ((Self.Progress + (1 * Self.Phase)) % 1)) * Self.Amplitude + 1
+            Self.Current_value = sin(pi * 2 * ((Self.Progress + (1 * Self.Phase)) % 1)) * Self.Amplitude + 1
             if(Max_LFO_cycles < 4): # Fastest possible number of cycles for the LFO is 4.
                 Max_LFO_cycles_updated = 4
             else:
@@ -277,7 +277,7 @@ with DMXInterface("FT232R") as interface:
     ### Initialize a Layer2.
     Layer2 = Layer2(Number_of_lights = Number_of_lights, Main_program = None, Sub_program = None, Parameter0 = 64, Parameter1 = 64, Parameter2 = 64, Parameter3 = 64, Parameter4 = 64, Parameter5 = 64, Parameter6 = 64, Parameter7 = 64)
          
-    with mido.open_input('Roland Digital Piano:Roland Digital Piano MIDI 1 36:0') as inport:
+    with mido.open_input('Roland Digital Piano:Roland Digital Piano MIDI 1 32:0') as inport:
     # with mido.open_input('Elektron Syntakt:Elektron Syntakt MIDI 1 32:0') as inport:
 
         Buffer = []
