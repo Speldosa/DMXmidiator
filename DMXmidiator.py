@@ -324,19 +324,56 @@ with DMXInterface("FT232R") as interface:
                             if(Layer2.Program[0][0] == 0): # Main program 0.
                                 
                                 if(Layer2.Program[0][1] == 0): # Sub program 0.
-                                    Layer2.Program[1] = Layer2.Program[0] # Copy the program to be implemented to program that is currently running.
-                                
+                                    for Count in range(len(Layer1.Array_of_Layer1_objects)):
+                                        Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
+                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC1), After_decay_amplitude=CC_to_ratio(CC1), Attack=0, Decay=0, Sustain=2, Release=2), LFO()),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC2), After_decay_amplitude=CC_to_ratio(CC2), Attack=0, Decay=0, Sustain=2, Release=2), LFO()),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC3), After_decay_amplitude=CC_to_ratio(CC4), Attack=CC_to_ratio(CC5), Decay=CC_to_ratio(CC6), Sustain=2.0, Release=CC_to_ratio(CC7), Ignore_go_to_release_phase=CC_to_boolean(CC8)), LFO())
+                                        )
+                                    
                                 elif(Layer2.Program[0][1] == 1): # Sub program 1.
-                                    Layer2.Program[1] = Layer2.Program[0] # Copy the program to be implemented to program that is currently running.
+                                    for Count in range(int(len(Layer1.Array_of_Layer1_objects)/2)):
+                                        Layer1.Array_of_Layer1_objects[int(Count + len(Layer1.Array_of_Layer1_objects)/2)] = Layer1_light_object(
+                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC1), After_decay_amplitude=CC_to_ratio(CC1), Attack=0, Decay=0, Sustain=2, Release=2), LFO()),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC2), After_decay_amplitude=CC_to_ratio(CC2), Attack=0, Decay=0, Sustain=2, Release=2), LFO()),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC3), After_decay_amplitude=CC_to_ratio(CC4), Attack=CC_to_ratio(CC5), Decay=CC_to_ratio(CC6), Sustain=2.0, Release=CC_to_ratio(CC7), Ignore_go_to_release_phase=CC_to_boolean(CC8)), LFO())
+                                        )
                                 
                                 elif(Layer2.Program[0][1] == 2): # Sub program 2.
-                                    Layer2.Program[1] = Layer2.Program[0] # Copy the program to be implemented to program that is currently running.
+                                    for Count in range(int(len(Layer1.Array_of_Layer1_objects)/2)):
+                                        Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
+                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC1), After_decay_amplitude=CC_to_ratio(CC1), Attack=0, Decay=0, Sustain=2, Release=2), LFO()),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC2), After_decay_amplitude=CC_to_ratio(CC2), Attack=0, Decay=0, Sustain=2, Release=2), LFO()),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC3), After_decay_amplitude=CC_to_ratio(CC4), Attack=CC_to_ratio(CC5), Decay=CC_to_ratio(CC6), Sustain=2.0, Release=CC_to_ratio(CC7), Ignore_go_to_release_phase=CC_to_boolean(CC8)), LFO())
+                                        )
                                 
                                 elif(Layer2.Program[0][1] == 3): # Sub program 3.
-                                    Layer2.Program[1] = Layer2.Program[0] # Copy the program to be implemented to program that is currently running.
+                                    for Count in range(int(len(Layer1.Array_of_Layer1_objects)/4)):
+                                        Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
+                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC1), After_decay_amplitude=CC_to_ratio(CC1), Attack=0, Decay=0, Sustain=2, Release=2), LFO()),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC2), After_decay_amplitude=CC_to_ratio(CC2), Attack=0, Decay=0, Sustain=2, Release=2), LFO()),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC3), After_decay_amplitude=CC_to_ratio(CC4), Attack=CC_to_ratio(CC5), Decay=CC_to_ratio(CC6), Sustain=2.0, Release=CC_to_ratio(CC7), Ignore_go_to_release_phase=CC_to_boolean(CC8)), LFO())
+                                        )
+                                        Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*3] = Layer1_light_object(
+                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC1), After_decay_amplitude=CC_to_ratio(CC1), Attack=0, Decay=0, Sustain=2, Release=2), LFO()),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC2), After_decay_amplitude=CC_to_ratio(CC2), Attack=0, Decay=0, Sustain=2, Release=2), LFO()),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC3), After_decay_amplitude=CC_to_ratio(CC4), Attack=CC_to_ratio(CC5), Decay=CC_to_ratio(CC6), Sustain=2.0, Release=CC_to_ratio(CC7), Ignore_go_to_release_phase=CC_to_boolean(CC8)), LFO())
+                                        )
                                 
                                 elif(Layer2.Program[0][1] == 4): # Sub program 4.
-                                    Layer2.Program[1] = Layer2.Program[0] # Copy the program to be implemented to program that is currently running.
+                                    for Count in range(int(len(Layer1.Array_of_Layer1_objects)/4)):
+                                        Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*1] = Layer1_light_object(
+                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC1), After_decay_amplitude=CC_to_ratio(CC1), Attack=0, Decay=0, Sustain=2, Release=2), LFO()),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC2), After_decay_amplitude=CC_to_ratio(CC2), Attack=0, Decay=0, Sustain=2, Release=2), LFO()),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC3), After_decay_amplitude=CC_to_ratio(CC4), Attack=CC_to_ratio(CC5), Decay=CC_to_ratio(CC6), Sustain=2.0, Release=CC_to_ratio(CC7), Ignore_go_to_release_phase=CC_to_boolean(CC8)), LFO())
+                                        )
+                                        Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*2] = Layer1_light_object(
+                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC1), After_decay_amplitude=CC_to_ratio(CC1), Attack=0, Decay=0, Sustain=2, Release=2), LFO()),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC2), After_decay_amplitude=CC_to_ratio(CC2), Attack=0, Decay=0, Sustain=2, Release=2), LFO()),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=CC_to_ratio(CC3), After_decay_amplitude=CC_to_ratio(CC4), Attack=CC_to_ratio(CC5), Decay=CC_to_ratio(CC6), Sustain=2.0, Release=CC_to_ratio(CC7), Ignore_go_to_release_phase=CC_to_boolean(CC8)), LFO())
+                                        )
+
+                            Layer2.Program[1] = Layer2.Program[0] # Finally, copy the program to be implemented to program that is currently running.
 
                     elif((Layer2.Program[2][0] is not None) and (Layer2.Program[2][1] is not None)): # If the program to be closed down is a complete program (i.e., contains a valid main program and a valid sub program)...
 
