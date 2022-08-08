@@ -9,17 +9,14 @@ import mido
 ### Used for debugging.
 # import time # Then sse time.perf_counter() to get the current time.
 
-#######################
-### Useful commands ###
-#######################
-# print(mido.get_input_names()) # Get a list of all available input ports.
-
 #################################################
 ### Global variables that can be manually set ###
 #################################################
 Number_of_lights = 32 # How many individually controllable lights you want to control. Right now, you should also change the number of channels in the dmx/constants.py file. Failure to do so can slow down the program since uncesscary commands then are being sent out.
+Midi_device = 'Elektron Syntakt:Elektron Syntakt MIDI 1' # Change this variable to whatever device you want to control the program. In order to get a list of all available devices, you can run: print(mido.get_input_names()). Also, notice that you don't have to include the "x:y" part at the end of the device name. In fact, it's probably better to leave this part out since it can (and probably will) change between reboots of the computer.
 Respond_to_midi_channels = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] # Dictates which midi channels should be listened to. Hasn't been implemented yet.
 Clock_ticks_per_cycle = 2 # How many ticks (one quarter note consists of 24 ticks) one cycle of the program should consist off. Lower values means lower latency, but if the value is set to low, cycles might become uneven in length.
+Channels_to_listen_to = [15] # List which midi channels should be listened to for midi messages. Notice that counting starts at zero, meaning that what most devices call midi channel 1 will be represented by 0 in this array.
 
 Max_brightness = 128 # In DMX value. So the minumum is 0 and the maximum is 255.
 Max_Attack_cycles = 128 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks the attack phase can be.
@@ -279,7 +276,7 @@ with DMXInterface("FT232R") as interface:
     Layer2 = Layer2(Number_of_lights = Number_of_lights, Main_program = None, Sub_program = None, Parameter0 = 64, Parameter1 = 64, Parameter2 = 64, Parameter3 = 64, Parameter4 = 64, Parameter5 = 64, Parameter6 = 64, Parameter7 = 64)
          
     # with mido.open_input('Roland Digital Piano:Roland Digital Piano MIDI 1 32:0') as inport:
-    with mido.open_input('Elektron Syntakt:Elektron Syntakt MIDI 1 36:0') as inport:
+    with mido.open_input(Midi_device) as inport:
 
         Buffer = []
 
@@ -294,7 +291,7 @@ with DMXInterface("FT232R") as interface:
                     Waiting_clock_messages.append(msg) # Append it to the array of waiting clock messages.
 
                 ### ### However, if the midi message coming in is something more interesting (CC message or note message), update Layer2 based on this information.
-                elif ((msg.type == 'control_change') or hasattr(msg, 'note')):
+                elif (((msg.type == 'control_change') or hasattr(msg, 'note')) and (msg.channel in Channels_to_listen_to)):
                     if(msg.type == 'control_change'): # If the message is a cc message...
                         if(msg.control in Parameters_cc): # If the cc message is part of the parameters cc...
                             Layer2.Parameters[Parameters_cc.index(msg.control)][1] = Layer2.Parameters[Parameters_cc.index(msg.control)][0] # Move the current cc value for that parameter to the previous cc value for that parameter.
@@ -323,9 +320,6 @@ with DMXInterface("FT232R") as interface:
                                     Layer2.Program[2] = Layer2.Program[1] # Copy program currently running to program that should be closed down...
                                     Layer2.Program[1] = [None, None] # ...and set the program currently running to none.
                                     Layer2.Program[0][1] = None # Set sub program part of program that should be implemented to none.
-                    
-                    print(" ")
-                    print(Layer2.Program)
                     
                     ### ### ### Then update Layer1 based on the content of Layer2. Note that only one operation will be necessary per loop. That is, if a program is to be closed down, there won't be any program to initialize and vice versa.
                     if((Layer2.Program[0][0] is not None) and (Layer2.Program[0][1] is not None)): # If program to be implemented is a complete program (i.e., contains a valid main program and a valid sub program)...
@@ -382,10 +376,9 @@ with DMXInterface("FT232R") as interface:
                                             Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(Layer2.Parameters[1][0]), After_decay_amplitude=CC_to_ratio(Layer2.Parameters[1][0]), Attack=0, Decay=0, Sustain=2, Release=2), LFO()),
                                             Brightness = Signal(ADSR(After_attack_amplitude=CC_to_ratio(Layer2.Parameters[2][0]), After_decay_amplitude=CC_to_ratio(Layer2.Parameters[3][0]), Attack=CC_to_ratio(Layer2.Parameters[4][0]), Decay=CC_to_ratio(Layer2.Parameters[5][0]), Sustain=2.0, Release=CC_to_ratio(Layer2.Parameters[6][0]), Ignore_go_to_release_phase=CC_to_boolean(Layer2.Parameters[7][0])), LFO())
                                         )
-                            print(Layer2.Program)
+
                             Layer2.Program[1] = Layer2.Program[0] # Finally, copy the program to be implemented to program that is currently running...
                             Layer2.Program[0] = [None, None] # ...and remove the program to be implemented.
-                            print(Layer2.Program)
                             
                     elif((Layer2.Program[2][0] is not None) and (Layer2.Program[2][1] is not None)): # If the program to be closed down is a complete program (i.e., contains a valid main program and a valid sub program)...
                         if(Layer2.Program[2][0] == 0): # Main program 0.
@@ -429,9 +422,7 @@ with DMXInterface("FT232R") as interface:
                                     Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*2].Saturation.ADSR.Go_to_release_phase = True
                                     Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*2].Brightness.ADSR.Go_to_release_phase = True
                         
-                        print(Layer2.Program)
                         Layer2.Program[2] = [None, None] # Finally, set the program to be removed to none.
-                        print(Layer2.Program)
                         
             ### When all messages in the buffer have been handeled... 
             Layer1.Update() # Update Layer1...
