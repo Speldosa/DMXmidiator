@@ -312,15 +312,19 @@ with DMXInterface("FT232R") as interface:
                                 if(Layer2.Program[0][0] == Main_program_notes.index(msg.note)): # If the note is a note off command for a main program that's already in the program to be initialized...
                                     Layer2.Program[0][0] = None #...set it to none.
                                 if(Layer2.Program[1][0] == Main_program_notes.index(msg.note)): # If the note is a note off command for a main program that's already in the current program...
-                                    print("Jag försöker få till denna grej att köra")
-                                    Layer2.Program[2] = Layer2.Program[1] # Copy program currently running to program that should be closed down.
+                                    Layer2.Program[2] = Layer2.Program[1] # Copy program currently running to program that should be closed down...
+                                    Layer2.Program[1] = [None, None] # ..and set the program currently running to none.
                                     Layer2.Program[0][0] = None # Set main program part of program that should be implemented to none.
                             elif(msg.note in Sub_program_notes): # Else, if the note is part of the sub program notes...
                                 if(Layer2.Program[0][1] == Sub_program_notes.index(msg.note)): # If the note is a note off command for a sub program that's already in the program to be initialized...
                                     Layer2.Program[0][1] = None #...set it to none.
                                 if(Layer2.Program[1][1] == Sub_program_notes.index(msg.note)): # If the note is a note off command for a sub program that's already in the current program...
-                                    Layer2.Program[2] = Layer2.Program[1] # Copy program currently running to program that should be closed down.
+                                    Layer2.Program[2] = Layer2.Program[1] # Copy program currently running to program that should be closed down...
+                                    Layer2.Program[1] = [None, None] # ...and set the program currently running to none.
                                     Layer2.Program[0][1] = None # Set sub program part of program that should be implemented to none.
+                    
+                    print(" ")
+                    print(Layer2.Program)
                     
                     ### ### ### Then update Layer1 based on the content of Layer2. Note that only one operation will be necessary per loop. That is, if a program is to be closed down, there won't be any program to initialize and vice versa.
                     if((Layer2.Program[0][0] is not None) and (Layer2.Program[0][1] is not None)): # If program to be implemented is a complete program (i.e., contains a valid main program and a valid sub program)...
@@ -377,7 +381,10 @@ with DMXInterface("FT232R") as interface:
                                             Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(Layer2.Parameters[1][0]), After_decay_amplitude=CC_to_ratio(Layer2.Parameters[1][0]), Attack=0, Decay=0, Sustain=2, Release=2), LFO()),
                                             Brightness = Signal(ADSR(After_attack_amplitude=CC_to_ratio(Layer2.Parameters[2][0]), After_decay_amplitude=CC_to_ratio(Layer2.Parameters[3][0]), Attack=CC_to_ratio(Layer2.Parameters[4][0]), Decay=CC_to_ratio(Layer2.Parameters[5][0]), Sustain=2.0, Release=CC_to_ratio(Layer2.Parameters[6][0]), Ignore_go_to_release_phase=CC_to_boolean(Layer2.Parameters[7][0])), LFO())
                                         )
-                            Layer2.Program[1] = Layer2.Program[0] # Finally, copy the program to be implemented to program that is currently running.
+                            print(Layer2.Program)
+                            Layer2.Program[1] = Layer2.Program[0] # Finally, copy the program to be implemented to program that is currently running...
+                            Layer2.Program[0] = [None, None] # ...and remove the program to be implemented.
+                            print(Layer2.Program)
                             
                     elif((Layer2.Program[2][0] is not None) and (Layer2.Program[2][1] is not None)): # If the program to be closed down is a complete program (i.e., contains a valid main program and a valid sub program)...
                         if(Layer2.Program[2][0] == 0): # Main program 0.
