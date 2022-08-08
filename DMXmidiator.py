@@ -6,8 +6,7 @@ from math import sin, pi
 from colorsys import hsv_to_rgb
 import mido
 
-### Used for debugging.
-# import time # Then sse time.perf_counter() to get the current time.
+# import time # Used for debugging. Use function time.perf_counter() to get the current time.
 
 #################################################
 ### Global variables that can be manually set ###
@@ -265,16 +264,10 @@ class Layer2:
 ### Open an interface
 with DMXInterface("FT232R") as interface:
 
-    ### Initialize a Layer0.
-    Layer0 = Layer0(Number_of_lights = Number_of_lights)
-
-    ### Initialize a Layer1.
-    Layer1 = Layer1(Number_of_lights = Number_of_lights)
-
-    ### Initialize a Layer2.
-    Layer2 = Layer2(Number_of_lights = Number_of_lights, Main_program = None, Sub_program = None, Parameter0 = 64, Parameter1 = 64, Parameter2 = 64, Parameter3 = 64, Parameter4 = 64, Parameter5 = 64, Parameter6 = 64, Parameter7 = 64)
+    Layer0 = Layer0(Number_of_lights = Number_of_lights) # Initialize a Layer0.
+    Layer1 = Layer1(Number_of_lights = Number_of_lights) # Initialize a Layer1.
+    Layer2 = Layer2(Number_of_lights = Number_of_lights, Main_program = None, Sub_program = None, Parameter0 = 64, Parameter1 = 64, Parameter2 = 64, Parameter3 = 64, Parameter4 = 64, Parameter5 = 64, Parameter6 = 64, Parameter7 = 64) # Initialize a Layer2.
          
-    # with mido.open_input('Roland Digital Piano:Roland Digital Piano MIDI 1 32:0') as inport:
     with mido.open_input(Midi_device) as inport:
 
         Buffer = []
@@ -321,8 +314,9 @@ with DMXInterface("FT232R") as interface:
                                     Layer2.Program[0][1] = None # Set sub program part of program that should be implemented to none.
                     
                     ### ### ### Then update Layer1 based on the content of Layer2. Note that only one operation will be necessary per loop. That is, if a program is to be closed down, there won't be any program to initialize and vice versa.
-                    if((Layer2.Program[0][0] is not None) and (Layer2.Program[0][1] is not None)): # If program to be implemented is a complete program (i.e., contains a valid main program and a valid sub program)...
-                        if(Layer2.Program[0] != Layer2.Program[1]): # ...and if program to be implemented isn't the same as what's currently running (in that case, it has already been initialized).
+                    ### ### ### ### Initialize program
+                    if((Layer2.Program[0][0] is not None) and (Layer2.Program[0][1] is not None)): # If there is a complete program waiting in the program to be initialized (i.e., if it contains a valid main program and a valid sub program)...
+                        if(Layer2.Program[0] != Layer2.Program[1]): # ...and if the program to be implemented isn't the same as what's currently running (in that case, it has already been initialized).
                             
                             if(Layer2.Program[0][0] == 0): # Main program 0.
                                 
@@ -379,30 +373,29 @@ with DMXInterface("FT232R") as interface:
                             Layer2.Program[1] = Layer2.Program[0] # Finally, copy the program to be implemented to program that is currently running...
                             Layer2.Program[0] = [None, None] # ...and remove the program to be implemented.
                             
-                    elif((Layer2.Program[2][0] is not None) and (Layer2.Program[2][1] is not None)): # If the program to be closed down is a complete program (i.e., contains a valid main program and a valid sub program)...
+                    ### ### ### ### Close down program
+                    elif((Layer2.Program[2][0] is not None) and (Layer2.Program[2][1] is not None)): # If there is a complete program waiting in the program to be closed down (i.e., if it contains a valid main program and a valid sub program)...
                         if(Layer2.Program[2][0] == 0): # Main program 0.
 
-                            if(Layer2.Program[2][1] == 0): # Sub program 0.
+                            if(Layer2.Program[2][1] == 0): # Sub program 0. All lights on.
                                 for Count in range(len(Layer1.Array_of_Layer1_objects)):
                                     Layer1.Array_of_Layer1_objects[Count].Hue.ADSR.Go_to_release_phase = True
                                     Layer1.Array_of_Layer1_objects[Count].Saturation.ADSR.Go_to_release_phase = True
-                                    Layer1.Array_of_Layer1_objects[Count].Brightness.ADSR.Go_to_release_phase = True
-                                
+                                    Layer1.Array_of_Layer1_objects[Count].Brightness.ADSR.Go_to_release_phase = True    
             
-                            elif(Layer2.Program[2][1] == 1): # Sub program 1.
+                            elif(Layer2.Program[2][1] == 1): # Sub program 1. Left half of the lights on.
                                 for Count in range(int(len(Layer1.Array_of_Layer1_objects)/2)):
                                     Layer1.Array_of_Layer1_objects[int(Count + len(Layer1.Array_of_Layer1_objects)/2)].Hue.ADSR.Go_to_release_phase = True
                                     Layer1.Array_of_Layer1_objects[int(Count + len(Layer1.Array_of_Layer1_objects)/2)].Saturation.ADSR.Go_to_release_phase = True
                                     Layer1.Array_of_Layer1_objects[int(Count + len(Layer1.Array_of_Layer1_objects)/2)].Brightness.ADSR.Go_to_release_phase = True
 
-                            elif(Layer2.Program[2][1] == 2): # Sub program 2.
+                            elif(Layer2.Program[2][1] == 2): # Sub program 2. Right half of the lights on.
                                 for Count in range(int(len(Layer1.Array_of_Layer1_objects)/2)):
                                     Layer1.Array_of_Layer1_objects[Count].Hue.ADSR.Go_to_release_phase = True
                                     Layer1.Array_of_Layer1_objects[Count].Saturation.ADSR.Go_to_release_phase = True
                                     Layer1.Array_of_Layer1_objects[Count].Brightness.ADSR.Go_to_release_phase = True
 
-                            ### Sub program 3.
-                            elif(Layer2.Program[2][1] == 3): # Sub program 3.
+                            elif(Layer2.Program[2][1] == 3): # Sub program 3. Left and right fourths of the lights on.
                                 for Count in range(int(len(Layer1.Array_of_Layer1_objects)/4)):
                                     Layer1.Array_of_Layer1_objects[Count].Hue.ADSR.Go_to_release_phase = True
                                     Layer1.Array_of_Layer1_objects[Count].Saturation.ADSR.Go_to_release_phase = True
@@ -411,8 +404,7 @@ with DMXInterface("FT232R") as interface:
                                     Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*3].Saturation.ADSR.Go_to_release_phase = True
                                     Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*3].Brightness.ADSR.Go_to_release_phase = True
 
-                            ### Sub program 4.
-                            elif(Layer2.Program[2][1] == 4): # Sub program 4.
+                            elif(Layer2.Program[2][1] == 4): # Sub program 4. Middle fourths of the lights on.
                                 for Count in range(int(len(Layer1.Array_of_Layer1_objects)/4)):
                                     Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*1].Hue.ADSR.Go_to_release_phase = True
                                     Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*1].Saturation.ADSR.Go_to_release_phase = True
@@ -424,7 +416,8 @@ with DMXInterface("FT232R") as interface:
                         Layer2.Program[2] = [None, None] # Finally, set the program to be removed to none.
                         
             ### When all messages in the buffer have been handeled... 
-            Layer1.Update() # Update Layer1...
+            ### ...update Layer1...
+            Layer1.Update() 
             ####  ...update Layer0 based on the content of Layer1...
             for Light_number in range(len(Layer0.Array_of_lights)):
                 Layer0.Set_color(Light_number, Hue=(Layer1.Array_of_Layer1_objects[Light_number].Hue.Current_value % 1), Saturation=Layer1.Array_of_Layer1_objects[Light_number].Saturation.Current_value, Brightness=Layer1.Array_of_Layer1_objects[Light_number].Brightness.Current_value)
