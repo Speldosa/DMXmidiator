@@ -452,4 +452,5 @@ with DMXInterface("FT232R") as interface:
                     else:
                         Buffer.append(msg)
                 if(len(Waiting_clock_messages) >= Clock_ticks_per_cycle):
+                    # print(len(Waiting_clock_messages)) # If you want to monitor if all cycles contains the same number of ticks, uncomment this line.
                     break
