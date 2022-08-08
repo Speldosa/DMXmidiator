@@ -145,7 +145,7 @@ class Signal:
         Self.Current_value = Self.ADSR.Current_value * Self.LFO.Current_value
 
 class ADSR:
-    def __init__(Self, After_attack_amplitude, After_decay_amplitude, Attack, Decay, Sustain, Release, Ignore_go_to_release_phase = False):
+    def __init__(Self, After_attack_amplitude = 1, After_decay_amplitude = 1, Attack = 0, Decay = 0, Sustain = 2.0, Release = 0, Ignore_go_to_release_phase = False):
         Self.After_attack_amplitude = After_attack_amplitude
         Self.After_decay_amplitude = After_decay_amplitude
         Self.Attack = Attack
