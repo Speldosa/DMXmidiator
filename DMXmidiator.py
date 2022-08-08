@@ -18,6 +18,7 @@ import mido
 ### Global variables that can be manually set ###
 #################################################
 Number_of_lights = 32 # How many individually controllable lights you want to control. Right now, you should also change the number of channels in the dmx/constants.py file. Failure to do so can slow down the program since uncesscary commands then are being sent out.
+Respond_to_midi_channels = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] # Dictates which midi channels should be listened to. Hasn't been implemented yet.
 Clock_ticks_per_cycle = 2 # How many ticks (one quarter note consists of 24 ticks) one cycle of the program should consist off. Lower values means lower latency, but if the value is set to low, cycles might become uneven in length.
 
 Max_brightness = 128 # In DMX value. So the minumum is 0 and the maximum is 255.
