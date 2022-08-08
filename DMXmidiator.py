@@ -14,9 +14,8 @@ import mido
 #################################################
 Number_of_lights = 32 # How many individually controllable lights you want to control. Right now, you should also change the number of channels in the dmx/constants.py file. Failure to do so can slow down the program since uncesscary commands then are being sent out.
 Midi_device = 'Elektron Syntakt:Elektron Syntakt MIDI 1' # Change this variable to whatever device you want to control the program. In order to get a list of all available devices, you can run: print(mido.get_input_names()). Also, notice that you don't have to include the "x:y" part at the end of the device name. In fact, it's probably better to leave this part out since it can (and probably will) change between reboots of the computer.
-Respond_to_midi_channels = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] # Dictates which midi channels should be listened to. Hasn't been implemented yet.
+Respond_to_midi_channels = [15] # List which midi channels should be listened to for midi messages. Notice that counting starts at zero, meaning that what most devices call midi channel 1 will be represented by 0 in this array.
 Clock_ticks_per_cycle = 2 # How many ticks (one quarter note consists of 24 ticks) one cycle of the program should consist off. Lower values means lower latency, but if the value is set to low, cycles might become uneven in length.
-Channels_to_listen_to = [15] # List which midi channels should be listened to for midi messages. Notice that counting starts at zero, meaning that what most devices call midi channel 1 will be represented by 0 in this array.
 
 Max_brightness = 128 # In DMX value. So the minumum is 0 and the maximum is 255.
 Max_Attack_cycles = 128 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks the attack phase can be.
@@ -291,7 +290,7 @@ with DMXInterface("FT232R") as interface:
                     Waiting_clock_messages.append(msg) # Append it to the array of waiting clock messages.
 
                 ### ### However, if the midi message coming in is something more interesting (CC message or note message), update Layer2 based on this information.
-                elif (((msg.type == 'control_change') or hasattr(msg, 'note')) and (msg.channel in Channels_to_listen_to)):
+                elif (((msg.type == 'control_change') or hasattr(msg, 'note')) and (msg.channel in Respond_to_midi_channels)):
                     if(msg.type == 'control_change'): # If the message is a cc message...
                         if(msg.control in Parameters_cc): # If the cc message is part of the parameters cc...
                             Layer2.Parameters[Parameters_cc.index(msg.control)][1] = Layer2.Parameters[Parameters_cc.index(msg.control)][0] # Move the current cc value for that parameter to the previous cc value for that parameter.
