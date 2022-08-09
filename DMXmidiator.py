@@ -374,15 +374,14 @@ with DMXInterface("FT232R") as interface:
                                 
                                 if(Layer2.Program[0][1] == 0): # Sub program 0.
                                     for Count in range(len(Layer1.Array_of_Layer1_objects)):
-                                        Tmp = Count/(len(Layer1.Array_of_Layer1_objects) - 1)
+                                        Tmp = (Count-1)/len(Layer1.Array_of_Layer1_objects)
                                         Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
                                             # Hue = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=Tmp, Decay=0, Sustain=2, Release=0), LFO()),
                                             # Saturation = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=1, Attack=Tmp, Decay=0, Sustain=1, Release=0), LFO()),
                                             # Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=0.5, Attack=Tmp, Decay=0, Sustain=1, Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = True, Rate = 0, Phase = -0.25 - Tmp))
                                             Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(Layer2.Parameters[0][0]), After_decay_amplitude=CC_to_ratio(Layer2.Parameters[0][0]), Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
-                                            Saturation = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
                                             Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=0.5, Attack=Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0])), Decay=0, Sustain=1-CC_to_ratio(Layer2.Parameters[3][0]), Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = True, Rate = CC_to_ratio(Layer2.Parameters[3][0]), Phase = -0.25 - Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0]))))
-                                            # CC_to_ratio(Layer2.Parameters[3][0])
                                         )
 
                             Layer2.Program[1] = Layer2.Program[0] # Finally, copy the program to be implemented to program that is currently running...
