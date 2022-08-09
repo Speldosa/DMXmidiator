@@ -371,17 +371,8 @@ with DMXInterface("FT232R") as interface:
                                         )
 
                             if(Layer2.Program[0][0] == 1): # Main program 1.
-                                
-                                if(Layer2.Program[0][1] == 0): # Sub program 0.
-                                    for Count in range(len(Layer1.Array_of_Layer1_objects)):
-                                        Tmp = (Count-1)/len(Layer1.Array_of_Layer1_objects)
-                                        Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
-                                            Hue = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[0][0]) - (CC_to_ratio(Layer2.Parameters[0][0]) - CC_to_ratio(Layer2.Parameters[4][0])) * Tmp, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
-                                            Saturation = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[1][0]) - (CC_to_ratio(Layer2.Parameters[1][0]) - CC_to_ratio(Layer2.Parameters[5][0])) * Tmp, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
-                                            Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=(CC_to_ratio(Layer2.Parameters[2][0]) - (CC_to_ratio(Layer2.Parameters[2][0]) - CC_to_ratio(Layer2.Parameters[6][0])) * Tmp) * 0.5, Attack=Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0])), Decay=0, Sustain=1-CC_to_ratio(Layer2.Parameters[3][0]), Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = False, Rate = CC_to_ratio(Layer2.Parameters[3][0]), Phase = -0.25 - Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0]))))
-                                        )
 
-                                if(Layer2.Program[0][1] == 1): # Sub program 1.
+                               if(Layer2.Program[0][1] == 0): # Sub program 0. Sweep from left to right.
                                     for Count in range(len(Layer1.Array_of_Layer1_objects)):
                                         Tmp = 1-((Count-1)/len(Layer1.Array_of_Layer1_objects))
                                         Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
@@ -390,10 +381,25 @@ with DMXInterface("FT232R") as interface:
                                             Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=(CC_to_ratio(Layer2.Parameters[2][0]) - (CC_to_ratio(Layer2.Parameters[2][0]) - CC_to_ratio(Layer2.Parameters[6][0])) * Tmp) * 0.5, Attack=Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0])), Decay=0, Sustain=1-CC_to_ratio(Layer2.Parameters[3][0]), Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = False, Rate = CC_to_ratio(Layer2.Parameters[3][0]), Phase = -0.25 - Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0]))))
                                         )
 
+                                if(Layer2.Program[0][1] == 1): # Sub program 1. Sweep from right to left.
+                                    for Count in range(len(Layer1.Array_of_Layer1_objects)):
+                                        Tmp = (Count-1)/len(Layer1.Array_of_Layer1_objects)
+                                        Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
+                                            Hue = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[0][0]) - (CC_to_ratio(Layer2.Parameters[0][0]) - CC_to_ratio(Layer2.Parameters[4][0])) * Tmp, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[1][0]) - (CC_to_ratio(Layer2.Parameters[1][0]) - CC_to_ratio(Layer2.Parameters[5][0])) * Tmp, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=(CC_to_ratio(Layer2.Parameters[2][0]) - (CC_to_ratio(Layer2.Parameters[2][0]) - CC_to_ratio(Layer2.Parameters[6][0])) * Tmp) * 0.5, Attack=Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0])), Decay=0, Sustain=1-CC_to_ratio(Layer2.Parameters[3][0]), Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = False, Rate = CC_to_ratio(Layer2.Parameters[3][0]), Phase = -0.25 - Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0]))))
+                                        )
+
+                                if(Layer2.Program[0][1] == 2): # Sub program 1. Sweep from the sides to the middle.
+                                    pass
+
+                                if(Layer2.Program[0][1] == 3): # Sub program 1. Sweep from the middle to the sides.
+                                    pass
+ 
                             Layer2.Program[1] = Layer2.Program[0] # Finally, copy the program to be implemented to the program that is currently running...
                             Layer2.Program[0] = [None, None] # ...and remove the program to be implemented.
                             
-                    ### ### ### ### Close down program
+                    ### ### ### ### Close down program.
                     elif((Layer2.Program[2][0] is not None) and (Layer2.Program[2][1] is not None)): # If there is a complete program waiting in the program to be closed down (i.e., if it contains a valid main program and a valid sub program)...
                         
                         if(Layer2.Program[2][0] == 0): # Main program 0.
@@ -433,10 +439,6 @@ with DMXInterface("FT232R") as interface:
                                     Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*2].Hue.ADSR.Go_to_release_phase = True
                                     Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*2].Saturation.ADSR.Go_to_release_phase = True
                                     Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*2].Brightness.ADSR.Go_to_release_phase = True
-                        
-                        if(Layer2.Program[2][0] == 1): # Main program 1.
-                            if(Layer2.Program[2][1] == 0): # Sub program 0. All lights on.
-                                pass
 
                         Layer2.Program[2] = [None, None] # Finally, set the program to be removed to none.
                         
