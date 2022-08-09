@@ -379,9 +379,9 @@ with DMXInterface("FT232R") as interface:
                                             # Hue = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=Tmp, Decay=0, Sustain=2, Release=0), LFO()),
                                             # Saturation = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=1, Attack=Tmp, Decay=0, Sustain=1, Release=0), LFO()),
                                             # Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=0.5, Attack=Tmp, Decay=0, Sustain=1, Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = True, Rate = 0, Phase = -0.25 - Tmp))
-                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(Layer2.Parameters[0][0]), After_decay_amplitude=CC_to_ratio(Layer2.Parameters[0][0]), Attack=0, Decay=0, Sustain=1, Release=0), LFO()),
-                                            Saturation = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=1, Release=0), LFO()),
-                                            Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=0.5, Attack=Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0])), Decay=0, Sustain=1, Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = True, Rate = CC_to_ratio(Layer2.Parameters[3][0]), Phase = -0.25 - Tmp))
+                                            Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(Layer2.Parameters[0][0]), After_decay_amplitude=CC_to_ratio(Layer2.Parameters[0][0]), Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=0.5, Attack=Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0])), Decay=0, Sustain=1-CC_to_ratio(Layer2.Parameters[3][0]), Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = True, Rate = CC_to_ratio(Layer2.Parameters[3][0]), Phase = -0.25 - Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0]))))
                                             # CC_to_ratio(Layer2.Parameters[3][0])
                                         )
 
