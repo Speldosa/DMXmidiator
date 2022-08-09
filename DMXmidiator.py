@@ -390,12 +390,15 @@ with DMXInterface("FT232R") as interface:
                                             Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=(CC_to_ratio(Layer2.Parameters[2][0]) - (CC_to_ratio(Layer2.Parameters[2][0]) - CC_to_ratio(Layer2.Parameters[6][0])) * Tmp) * 0.5, Attack=Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0])), Decay=0, Sustain=1-CC_to_ratio(Layer2.Parameters[3][0]), Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = False, Rate = CC_to_ratio(Layer2.Parameters[3][0]), Phase = -0.25 - Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0]))))
                                         )
 
-                                if(Layer2.Program[0][1] == 2): # Sub program 1. Sweep from the sides to the middle.
+                                if(Layer2.Program[0][1] == 2): # Sub program 2. Sweep from the sides to the middle.
                                     pass
 
-                                if(Layer2.Program[0][1] == 3): # Sub program 1. Sweep from the middle to the sides.
+                                if(Layer2.Program[0][1] == 3): # Sub program 3. Sweep from the middle to the sides.
                                     pass
- 
+
+                                if(Layer2.Program[0][1] == 4): # Sub program 4. Come up with something fun :)
+                                    pass                               
+
                             Layer2.Program[1] = Layer2.Program[0] # Finally, copy the program to be implemented to the program that is currently running...
                             Layer2.Program[0] = [None, None] # ...and remove the program to be implemented.
                             
