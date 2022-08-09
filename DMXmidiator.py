@@ -16,12 +16,12 @@ Midi_device = 'Elektron Syntakt:Elektron Syntakt MIDI 1' # Change this variable 
 Respond_to_midi_channels = [15] # List which midi channels should be listened to for midi messages. Notice that counting starts at zero, meaning that what most devices call midi channel 1 will be represented by 0 in this array.
 Clock_ticks_per_cycle = 2 # How many ticks (one quarter note consists of 24 ticks) one cycle of the program should consist off. Lower values means lower latency, but if the value is set to low, cycles might become uneven in length.
 
-Max_brightness = 128 # In DMX value. So the minumum is 0 and the maximum is 255.
-Max_Attack_cycles = 128 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks the attack phase can be.
-Max_Decay_cycles = 128 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks the decay phase can be.
-Max_Sustain_cycles = 128 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks the sustain phase can be.
-Max_Release_cycles = 128 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks the release phase can be.
-Max_LFO_cycles = 128 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks a complete LFO phase can be.
+Max_brightness = 127 # In DMX value. So the minumum is 0 and the maximum is 255.
+Max_Attack_cycles = 127 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks the attack phase can be.
+Max_Decay_cycles = 127 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks the decay phase can be.
+Max_Sustain_cycles = 127 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks the sustain phase can be.
+Max_Release_cycles = 127 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks the release phase can be.
+Max_LFO_cycles = 127 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks a complete LFO phase can be.
 
 Main_program_0_note = 60
 Main_program_1_note = 62
@@ -380,8 +380,8 @@ with DMXInterface("FT232R") as interface:
                                             # Saturation = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=1, Attack=Tmp, Decay=0, Sustain=1, Release=0), LFO()),
                                             # Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=0.5, Attack=Tmp, Decay=0, Sustain=1, Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = True, Rate = 0, Phase = -0.25 - Tmp))
                                             Hue = Signal(ADSR(After_attack_amplitude=CC_to_ratio(Layer2.Parameters[0][0]), After_decay_amplitude=CC_to_ratio(Layer2.Parameters[0][0]), Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
-                                            Saturation = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
-                                            Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=0.5, Attack=Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0])), Decay=0, Sustain=1-CC_to_ratio(Layer2.Parameters[3][0]), Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = True, Rate = CC_to_ratio(Layer2.Parameters[3][0]), Phase = -0.25 - Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0]))))
+                                            Saturation = Signal(ADSR(After_attack_amplitude=CC_to_ratio(Layer2.Parameters[1][0]), After_decay_amplitude=CC_to_ratio(Layer2.Parameters[1][0]), Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[2][0]) * 0.5, Attack=Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0])), Decay=0, Sustain=1-CC_to_ratio(Layer2.Parameters[3][0]), Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = True, Rate = CC_to_ratio(Layer2.Parameters[3][0]), Phase = -0.25 - Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0]))))
                                         )
 
                             Layer2.Program[1] = Layer2.Program[0] # Finally, copy the program to be implemented to program that is currently running...
