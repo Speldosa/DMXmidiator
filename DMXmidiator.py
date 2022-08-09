@@ -370,11 +370,17 @@ with DMXInterface("FT232R") as interface:
                                             Brightness = Signal(ADSR(After_attack_amplitude=CC_to_ratio(Layer2.Parameters[2][0]), After_decay_amplitude=CC_to_ratio(Layer2.Parameters[3][0]), Attack=CC_to_ratio(Layer2.Parameters[4][0]), Decay=CC_to_ratio(Layer2.Parameters[5][0]), Sustain=2.0, Release=CC_to_ratio(Layer2.Parameters[6][0]), Ignore_go_to_release_phase=CC_to_boolean(Layer2.Parameters[7][0])), LFO())
                                         )
 
+                            if(Layer2.Program[0][0] == 1): # Main program 1.
+                                
+                                if(Layer2.Program[0][1] == 0): # Sub program 0.
+                                    pass
+
                             Layer2.Program[1] = Layer2.Program[0] # Finally, copy the program to be implemented to program that is currently running...
                             Layer2.Program[0] = [None, None] # ...and remove the program to be implemented.
                             
                     ### ### ### ### Close down program
                     elif((Layer2.Program[2][0] is not None) and (Layer2.Program[2][1] is not None)): # If there is a complete program waiting in the program to be closed down (i.e., if it contains a valid main program and a valid sub program)...
+                        
                         if(Layer2.Program[2][0] == 0): # Main program 0.
 
                             if(Layer2.Program[2][1] == 0): # Sub program 0. All lights on.
@@ -413,6 +419,10 @@ with DMXInterface("FT232R") as interface:
                                     Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*2].Saturation.ADSR.Go_to_release_phase = True
                                     Layer1.Array_of_Layer1_objects[Count+int(len(Layer1.Array_of_Layer1_objects)/4)*2].Brightness.ADSR.Go_to_release_phase = True
                         
+                        if(Layer2.Program[2][0] == 1): # Main program 1.
+                            if(Layer2.Program[2][1] == 0): # Sub program 0. All lights on.
+                                pass
+
                         Layer2.Program[2] = [None, None] # Finally, set the program to be removed to none.
                         
             ### When all messages in the buffer have been handeled... 
