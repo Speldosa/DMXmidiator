@@ -378,7 +378,7 @@ with DMXInterface("FT232R") as interface:
                                         Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
                                             Hue = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=Tmp, Decay=0, Sustain=2, Release=0), LFO()),
                                             Saturation = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=Tmp, Decay=0, Sustain=2, Release=0), LFO()),
-                                            Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=1, Attack=Tmp, Decay=0, Sustain=2, Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = False, Rate = 0, Phase = -0.25 - Tmp))
+                                            Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=1, Attack=Tmp, Decay=0, Sustain=2, Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = True, Rate = 0, Phase = -0.25 - Tmp))
                                         )
 
                             Layer2.Program[1] = Layer2.Program[0] # Finally, copy the program to be implemented to program that is currently running...
@@ -436,7 +436,7 @@ with DMXInterface("FT232R") as interface:
             Layer1.Update() 
             ####  ...update Layer0 based on the content of Layer1...
             for Light_number in range(len(Layer0.Array_of_lights)):
-                Layer0.Set_color(Light_number, Hue=(Layer1.Array_of_Layer1_objects[Light_number].Hue.Current_value % 1), Saturation=Layer1.Array_of_Layer1_objects[Light_number].Saturation.Current_value, Brightness=Layer1.Array_of_Layer1_objects[Light_number].Brightness.Current_value)
+                Layer0.Set_color(Light_number, Hue=(Layer1.Array_of_Layer1_objects[Light_number].Hue.Current_value % 1), Saturation=max(min(Layer1.Array_of_Layer1_objects[Light_number].Saturation.Current_value,1),0), Brightness=max(min(Layer1.Array_of_Layer1_objects[Light_number].Brightness.Current_value,1),0))
             ### ...and finllay light up the lights based on the content of Layer0.
             Layer0.Let_there_be_light()
 
