@@ -377,7 +377,7 @@ with DMXInterface("FT232R") as interface:
                                         Tmp = Count/(len(Layer1.Array_of_Layer1_objects) - 1)
                                         Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
                                             Hue = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=Tmp, Decay=0, Sustain=2, Release=0), LFO()),
-                                            Saturation = Signal(ADSR(After_attack_amplitude=1, After_decay_amplitude=1, Attack=Tmp, Decay=0, Sustain=2, Release=0), LFO()),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=1, Attack=Tmp, Decay=0, Sustain=2, Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = True, Rate = 0, Phase = -0.25 - Tmp)),
                                             Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=1, Attack=Tmp, Decay=0, Sustain=2, Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = True, Rate = 0, Phase = -0.25 - Tmp))
                                         )
 
