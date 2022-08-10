@@ -372,7 +372,7 @@ with DMXInterface("FT232R") as interface:
 
                             if(Layer2.Program[0][0] == 1): # Main program 1.
 
-                               if(Layer2.Program[0][1] == 0): # Sub program 0. Sweep from left to right.
+                                if(Layer2.Program[0][1] == 0): # Sub program 0. Sweep from left to right.
                                     for Count in range(len(Layer1.Array_of_Layer1_objects)):
                                         Tmp = 1-((Count-1)/len(Layer1.Array_of_Layer1_objects))
                                         Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
