@@ -16,14 +16,4 @@ dmx/drivers/__pycache__/avrdmx.cpython-39.pyc
 dmx/drivers/__pycache__/debug.cpython-39.pyc
 dmx/drivers/__pycache__/dummy.cpython-39.pyc
 dmx/drivers/__pycache__/ft232r.cpython-39.pyc
-dmx/__pycache__/__init__.cpython-39.pyc
-dmx/__pycache__/colour.cpython-39.pyc
-dmx/__pycache__/constants.cpython-39.pyc
-dmx/__pycache__/interface.cpython-39.pyc
-dmx/__pycache__/light.cpython-39.pyc
-dmx/__pycache__/universe.cpython-39.pyc
-dmx/drivers/__pycache__/__init__.cpython-39.pyc
-dmx/drivers/__pycache__/avrdmx.cpython-39.pyc
-dmx/drivers/__pycache__/debug.cpython-39.pyc
-dmx/drivers/__pycache__/dummy.cpython-39.pyc
-dmx/drivers/__pycache__/ft232r.cpython-39.pyc
+
