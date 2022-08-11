@@ -238,7 +238,7 @@ class LFO:
         Self.Progress = 0.0
         Self.Current_value = 1.0 # Can range between 0 and 2.
 
-    def Update(Self):
+"""     def Update(Self):
         if(round(Self.Progress, 2) >= 1):
             if(Self.Repeat):
                 Self.Progress = 0
@@ -251,7 +251,21 @@ class LFO:
             else:
                 Max_LFO_cycles_updated = Max_LFO_cycles
             LFO_cycles = 4 + round((Max_LFO_cycles_updated - 4) * (1 - Self.Rate))
-            Self.Progress = Self.Progress + 1/LFO_cycles
+            Self.Progress = Self.Progress + 1/LFO_cycles """
+
+    def Update(Self):
+        if(round(Self.Progress, 2) >= 1):
+            if(Self.Repeat):
+                Self.Progress = 0
+        if(not Self.Repeat and (round(Self.Progress, 2) >= 1)):
+            Self.Current_value = sin(pi * 2 * ((0 + (1 * Self.Phase)) % 1)) * Self.Amplitude + 1
+        else:
+            Self.Current_value = sin(pi * 2 * ((Self.Progress + (1 * Self.Phase)) % 1)) * Self.Amplitude + 1
+            LFO_cycles = 4 + round((Max_LFO_cycles - 4) * (1 - Self.Rate))
+            if(LFO_cycles =< 0):
+                Self.Progress = 1
+            else:
+                Self.Progress = Self.Progress + 1/LFO_cycles
 
 class Layer2:
     def __init__(Self, Number_of_lights, Main_program, Sub_program, Parameter0, Parameter1, Parameter2, Parameter3, Parameter4, Parameter5, Parameter6, Parameter7):
