@@ -390,7 +390,7 @@ with DMXInterface(DMX_driver) as interface:
 
                                 if(Layer2.Program[0][1] == 0): # Sub program 0. Sweep from left to right.
                                     for Count in range(len(Layer1.Array_of_Layer1_objects)):
-                                        Tmp = 1-((Count-1)/len(Layer1.Array_of_Layer1_objects))
+                                        Tmp = 1-(Count/(len(Layer1.Array_of_Layer1_objects)-1))
                                         Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
                                             Hue = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[0][0]) - (CC_to_ratio(Layer2.Parameters[0][0]) - CC_to_ratio(Layer2.Parameters[4][0])) * Tmp, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
                                             Saturation = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[1][0]) - (CC_to_ratio(Layer2.Parameters[1][0]) - CC_to_ratio(Layer2.Parameters[5][0])) * Tmp, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
@@ -399,7 +399,7 @@ with DMXInterface(DMX_driver) as interface:
 
                                 if(Layer2.Program[0][1] == 1): # Sub program 1. Sweep from right to left.
                                     for Count in range(len(Layer1.Array_of_Layer1_objects)):
-                                        Tmp = (Count-1)/len(Layer1.Array_of_Layer1_objects)
+                                        Tmp = Count/(len(Layer1.Array_of_Layer1_objects) - 1)
                                         Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
                                             Hue = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[0][0]) - (CC_to_ratio(Layer2.Parameters[0][0]) - CC_to_ratio(Layer2.Parameters[4][0])) * Tmp, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
                                             Saturation = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[1][0]) - (CC_to_ratio(Layer2.Parameters[1][0]) - CC_to_ratio(Layer2.Parameters[5][0])) * Tmp, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
