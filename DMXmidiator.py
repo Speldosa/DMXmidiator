@@ -258,11 +258,11 @@ class LFO:
             if(Self.Repeat):
                 Self.Progress = 0
         if(not Self.Repeat and (round(Self.Progress, 2) >= 1)):
-            Self.Current_value = sin(pi * 2 * ((0 + (1 * Self.Phase)) % 1)) * Self.Amplitude + 1
+            Self.Current_value = sin(pi * 2 * (Self.Phase % 1)) * Self.Amplitude + 1
         else:
-            Self.Current_value = sin(pi * 2 * ((Self.Progress + (1 * Self.Phase)) % 1)) * Self.Amplitude + 1
-            LFO_cycles = 4 + round((Max_LFO_cycles - 4) * (1 - Self.Rate))
-            if(LFO_cycles =< 0):
+            Self.Current_value = sin(pi * 2 * ((Self.Progress + Self.Phase) % 1)) * Self.Amplitude + 1
+            LFO_cycles = round(Max_LFO_cycles * (1 - Self.Rate))
+            if(LFO_cycles <= 0):
                 Self.Progress = 1
             else:
                 Self.Progress = Self.Progress + 1/LFO_cycles
@@ -462,7 +462,16 @@ with DMXInterface(DMX_driver) as interface:
                         
             ### When all messages in the buffer have been handeled... 
             ### ...update Layer1...
-            Layer1.Update() 
+            Layer1.Update()
+            print("ADSR, value:")
+            print(Layer1.Array_of_Layer1_objects[15].Brightness.ADSR.Current_value)
+            print("ADSR, progress:")
+            print(Layer1.Array_of_Layer1_objects[15].Brightness.ADSR.Progress)
+            print("LFO, value:")
+            print(Layer1.Array_of_Layer1_objects[15].Brightness.LFO.Current_value)
+            print("LFO, progress:")
+            print(Layer1.Array_of_Layer1_objects[15].Brightness.LFO.Progress)
+            print("")
             ####  ...update Layer0 based on the content of Layer1...
             for Light_number in range(len(Layer0.Array_of_lights)):
                 Layer0.Set_color(Light_number, Hue=(Layer1.Array_of_Layer1_objects[Light_number].Hue.Current_value % 1), Saturation=max(min(Layer1.Array_of_Layer1_objects[Light_number].Saturation.Current_value,1),0), Brightness=max(min(Layer1.Array_of_Layer1_objects[Light_number].Brightness.Current_value,1),0))
