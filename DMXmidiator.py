@@ -258,8 +258,8 @@ class LFO:
         if(round(Self.Progress, 2) >= 1):
             if(Self.Repeat):
                 Self.Progress = 0
-        if(not Self.Repeat and (round(Self.Progress, 2) >= 1)):
-            Self.Current_value = sin(pi * 2 * (Self.Phase % 1)) * Self.Amplitude + 1
+            else:
+                Self.Current_value = sin(pi * 2 * (Self.Phase % 1)) * Self.Amplitude + 1
         else:
             Self.Current_value = sin(pi * 2 * ((Self.Progress + Self.Phase) % 1)) * Self.Amplitude + 1
             LFO_cycles = round(Max_LFO_cycles * (1 - Self.Rate))
@@ -403,7 +403,8 @@ with DMXInterface(DMX_driver) as interface:
                                         Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
                                             Hue = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[0][0]) - (CC_to_ratio(Layer2.Parameters[0][0]) - CC_to_ratio(Layer2.Parameters[4][0])) * Tmp, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
                                             Saturation = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[1][0]) - (CC_to_ratio(Layer2.Parameters[1][0]) - CC_to_ratio(Layer2.Parameters[5][0])) * Tmp, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
-                                            Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=(CC_to_ratio(Layer2.Parameters[2][0]) - (CC_to_ratio(Layer2.Parameters[2][0]) - CC_to_ratio(Layer2.Parameters[6][0])) * Tmp) * 0.5, Attack=Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0])), Decay=0, Sustain=1-CC_to_ratio(Layer2.Parameters[3][0]), Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = True, Rate = CC_to_ratio(Layer2.Parameters[3][0]), Phase = -0.25 - Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0]))))
+                                            # Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=(CC_to_ratio(Layer2.Parameters[2][0]) - (CC_to_ratio(Layer2.Parameters[2][0]) - CC_to_ratio(Layer2.Parameters[6][0])) * Tmp) * 0.5, Attack=Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0])), Decay=0, Sustain=1-CC_to_ratio(Layer2.Parameters[3][0]), Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = True, Rate = CC_to_ratio(Layer2.Parameters[3][0]), Phase = -0.25 - Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0]))))
+                                            Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=(CC_to_ratio(Layer2.Parameters[2][0]) - (CC_to_ratio(Layer2.Parameters[2][0]) - CC_to_ratio(Layer2.Parameters[6][0])) * Tmp) * 0.5, Attack=Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0])), Decay=0, Sustain=1-CC_to_ratio(Layer2.Parameters[3][0]), Release=0), LFO()
                                         )
 
                                 if(Layer2.Program[0][1] == 2): # Sub program 2. Sweep from the sides to the middle.
