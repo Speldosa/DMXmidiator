@@ -7,6 +7,7 @@ from colorsys import hsv_to_rgb
 import mido
 
 # import time # Used for debugging. Use function time.perf_counter() to get the current time.
+a = 0
 
 #################################################
 ### Global variables that can be manually set ###
@@ -463,6 +464,8 @@ with DMXInterface(DMX_driver) as interface:
             ### When all messages in the buffer have been handeled... 
             ### ...update Layer1...
             Layer1.Update()
+            print("Cycle:")
+            print(a)
             print("ADSR, value:")
             print(Layer1.Array_of_Layer1_objects[15].Brightness.ADSR.Current_value)
             print("ADSR, progress:")
@@ -471,7 +474,10 @@ with DMXInterface(DMX_driver) as interface:
             print(Layer1.Array_of_Layer1_objects[15].Brightness.LFO.Current_value)
             print("LFO, progress:")
             print(Layer1.Array_of_Layer1_objects[15].Brightness.LFO.Progress)
+            print("Brightness:")
+            print(Layer1.Array_of_Layer1_objects[15].Brightness.Current_value)
             print("")
+            a = a + 1
             ####  ...update Layer0 based on the content of Layer1...
             for Light_number in range(len(Layer0.Array_of_lights)):
                 Layer0.Set_color(Light_number, Hue=(Layer1.Array_of_Layer1_objects[Light_number].Hue.Current_value % 1), Saturation=max(min(Layer1.Array_of_Layer1_objects[Light_number].Saturation.Current_value,1),0), Brightness=max(min(Layer1.Array_of_Layer1_objects[Light_number].Brightness.Current_value,1),0))
