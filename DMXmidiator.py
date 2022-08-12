@@ -407,39 +407,36 @@ with DMXInterface(DMX_driver) as interface:
                                         )
 
                                 if(Layer2.Program[0][1] == 2): # Sub program 2. Sweep from the middle to the sides. 
-                                    for Count in range(int(len(Layer1.Array_of_Layer1_objects)/2)):
-                                        Tmp = 1-(Count/(len(Layer1.Array_of_Layer1_objects)-1))
+                                    for Count in range(int(len(Layer1.Array_of_Layer1_objects)/2)): # Sweep from the middle to the left.
+                                        Tmp = 1-(Count/(len(Layer1.Array_of_Layer1_objects)-1)) - 0.5 # Goes from 0.5 to 0.
                                         Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
                                             Hue = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[0][0]) - (CC_to_ratio(Layer2.Parameters[0][0]) - CC_to_ratio(Layer2.Parameters[4][0])) * (Tmp * 2), Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
                                             Saturation = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[1][0]) - (CC_to_ratio(Layer2.Parameters[1][0]) - CC_to_ratio(Layer2.Parameters[5][0])) * (Tmp * 2), Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
-                                            Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=(CC_to_ratio(Layer2.Parameters[2][0]) - (CC_to_ratio(Layer2.Parameters[2][0]) - CC_to_ratio(Layer2.Parameters[6][0])) * (Tmp * 2)) * 0.5, Attack=Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0])), Decay=0, Sustain=1-CC_to_ratio(Layer2.Parameters[3][0]), Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = True, Rate = CC_to_ratio(Layer2.Parameters[3][0]), Phase = -0.25 - Tmp))
+                                            Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[2][0]) - (CC_to_ratio(Layer2.Parameters[2][0]) - CC_to_ratio(Layer2.Parameters[6][0])) * (Tmp * 2), Attack=Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0])), Decay=0, Sustain=(1-CC_to_ratio(Layer2.Parameters[3][0]))/2, Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = True, Rate = CC_to_ratio(Layer2.Parameters[3][0]), Phase = -0.25 - Tmp))
                                         )
-                                    for Count in range(int(len(Layer1.Array_of_Layer1_objects)/2), len(Layer1.Array_of_Layer1_objects)):
-                                        Tmp = Count/(len(Layer1.Array_of_Layer1_objects) - 1)
+                                    for Count in range(int(len(Layer1.Array_of_Layer1_objects)/2), len(Layer1.Array_of_Layer1_objects)): # Sweep from the middle to the right.
+                                        Tmp = Count/(len(Layer1.Array_of_Layer1_objects) - 1) - 0.5 # Goes from 0 to 0.5.
                                         Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
-                                            Hue = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[0][0]) - (CC_to_ratio(Layer2.Parameters[0][0]) - CC_to_ratio(Layer2.Parameters[4][0])) * ((Tmp - 0.5) * 2), Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
+                                            Hue = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[0][0]) - (CC_to_ratio(Layer2.Parameters[0][0]) - CC_to_ratio(Layer2.Parameters[4][0])) * (Tmp * 2), Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
                                             Saturation = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[1][0]) - (CC_to_ratio(Layer2.Parameters[1][0]) - CC_to_ratio(Layer2.Parameters[5][0])) * ((Tmp - 0.5) * 2), Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
-                                            Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=(CC_to_ratio(Layer2.Parameters[2][0]) - (CC_to_ratio(Layer2.Parameters[2][0]) - CC_to_ratio(Layer2.Parameters[6][0])) * ((Tmp - 0.5) * 2)) * 0.5, Attack=Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0])), Decay=0, Sustain=1-CC_to_ratio(Layer2.Parameters[3][0]), Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = True, Rate = CC_to_ratio(Layer2.Parameters[3][0]), Phase = -0.25 - Tmp))
+                                            Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[2][0]) - (CC_to_ratio(Layer2.Parameters[2][0]) - CC_to_ratio(Layer2.Parameters[6][0])) * ((Tmp - 0.5) * 2), Attack=Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0])), Decay=0, Sustain=(1-CC_to_ratio(Layer2.Parameters[3][0]))/2, Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = True, Rate = CC_to_ratio(Layer2.Parameters[3][0]), Phase = -0.25 - Tmp))
                                         )
+                                        print(Tmp)
 
-                                if(Layer2.Program[0][1] == 3):
-                                    ### Sub program 3. Sweep from the sides to the middle.
-                                    ### ### Sweep from left to the middle.
-                                    for Count in range(0, int(len(Layer1.Array_of_Layer1_objects)/2)): # Count half of the lights.
-                                        Tmp = Count/(len(Layer1.Array_of_Layer1_objects)-1) # Goes from 0 to 1.
+                                if(Layer2.Program[0][1] == 3): # Sub program 3. Sweep from the sides to the middle.
+                                    for Count in range(int(len(Layer1.Array_of_Layer1_objects)/2)): # Sweep from the left to the middle.
+                                        Tmp = Count/(len(Layer1.Array_of_Layer1_objects)-1) # Goes from 0 to 0.5
                                         Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
-                                            Hue = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[0][0]) - (CC_to_ratio(Layer2.Parameters[0][0]) - CC_to_ratio(Layer2.Parameters[4][0])) * Tmp, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
-                                            Saturation = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[1][0]) - (CC_to_ratio(Layer2.Parameters[1][0]) - CC_to_ratio(Layer2.Parameters[5][0])) * Tmp, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
-                                            Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=(CC_to_ratio(Layer2.Parameters[2][0]) - (CC_to_ratio(Layer2.Parameters[2][0]) - CC_to_ratio(Layer2.Parameters[6][0])) * Tmp) * 0.5, Attack=Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0])), Decay=0, Sustain=1-CC_to_ratio(Layer2.Parameters[3][0]), Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = True, Rate = CC_to_ratio(Layer2.Parameters[3][0]), Phase = -0.25 - Tmp))
+                                            Hue = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[0][0]) - (CC_to_ratio(Layer2.Parameters[0][0]) - CC_to_ratio(Layer2.Parameters[4][0])) * Tmp * 2, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[1][0]) - (CC_to_ratio(Layer2.Parameters[1][0]) - CC_to_ratio(Layer2.Parameters[5][0])) * Tmp * 2, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[2][0]) - (CC_to_ratio(Layer2.Parameters[2][0]) - CC_to_ratio(Layer2.Parameters[6][0])) * Tmp, Attack=Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0])), Decay=0, Sustain=(1-CC_to_ratio(Layer2.Parameters[3][0]))/2, Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = True, Rate = CC_to_ratio(Layer2.Parameters[3][0]), Phase = -0.25 - Tmp))
                                         )
-                                    ### ### Sweep to the middle from the right.
-                                    for Count in range(0, int(len(Layer1.Array_of_Layer1_objects)/2)): # Count half of the lights.
-                                        Tmp = 1-Count/(len(Layer1.Array_of_Layer1_objects) - 1) # Goes from 1 to 0.
-                                        Layer1.Array_of_Layer1_objects[int(Count + len(Layer1.Array_of_Layer1_objects)/2)] = Layer1_light_object(
-                                            Hue = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[0][0]) - (CC_to_ratio(Layer2.Parameters[0][0]) - CC_to_ratio(Layer2.Parameters[4][0])) * Tmp, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
-                                            Saturation = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[1][0]) - (CC_to_ratio(Layer2.Parameters[1][0]) - CC_to_ratio(Layer2.Parameters[5][0])) * Tmp, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
-                                            Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=(CC_to_ratio(Layer2.Parameters[2][0]) - (CC_to_ratio(Layer2.Parameters[2][0]) - CC_to_ratio(Layer2.Parameters[6][0])) * Tmp) * 0.5, Attack=Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0])), Decay=0, Sustain=1-CC_to_ratio(Layer2.Parameters[3][0]), Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = True, Rate = CC_to_ratio(Layer2.Parameters[3][0]), Phase = -0.25 - Tmp))
-                                            print(Tmp)
+                                    for Count in range(int(len(Layer1.Array_of_Layer1_objects)/2), len(Layer1.Array_of_Layer1_objects)): # Sweep to the middle from the right.
+                                        Tmp = 1-Count/(len(Layer1.Array_of_Layer1_objects) - 1) # Goes from 0.5 to 0.
+                                        Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
+                                            Hue = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[0][0]) - (CC_to_ratio(Layer2.Parameters[0][0]) - CC_to_ratio(Layer2.Parameters[4][0])) * Tmp * 2, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
+                                            Saturation = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[1][0]) - (CC_to_ratio(Layer2.Parameters[1][0]) - CC_to_ratio(Layer2.Parameters[5][0])) * Tmp * 2, Attack=0, Decay=0, Sustain=2, Release=0), LFO()),
+                                            Brightness = Signal(ADSR(After_attack_amplitude=0, After_decay_amplitude=CC_to_ratio(Layer2.Parameters[2][0]) - (CC_to_ratio(Layer2.Parameters[2][0]) - CC_to_ratio(Layer2.Parameters[6][0])) * Tmp, Attack=Tmp * (1-CC_to_ratio(Layer2.Parameters[3][0])), Decay=0, Sustain=(1-CC_to_ratio(Layer2.Parameters[3][0]))/2, Release=0), LFO(Waveform = "Sine", Amplitude = 1, Repeat = True, Rate = CC_to_ratio(Layer2.Parameters[3][0]), Phase = -0.25 - Tmp))  
                                         )
 
                                 if(Layer2.Program[0][1] == 4): # Sub program 4. Come up with something fun :)
