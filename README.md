@@ -6,3 +6,4 @@ Things to structure later:
 - After choosing a main program and a sub program via midi note events, there is no memory of both of these key presses. That means that if you for example press C4 and D#4, release D#4 and press F#4 instead, nothing will happen since there is no memory left of C4 being held down. This is intentional.
 - After you've initialized a program (by choosing a main program and a sub program), you cannot manipulate the parameters of that program. For example, the release time will be whatever you sat it to at the initialization even if you send new parameter instuctions afterwards.
 - Test.
+- Test 2.
