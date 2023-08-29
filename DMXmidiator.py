@@ -17,6 +17,7 @@ Midi_device = 'Elektron Syntakt:Elektron Syntakt MIDI 1' # Change this variable 
 Respond_to_midi_channels = [15] # List which midi channels should be listened to for midi messages. Notice that counting starts at zero, meaning that what most devices call midi channel 1 will be represented by 0 in this array.
 Clock_ticks_per_cycle = 2 # How many ticks (one quarter note consists of 24 ticks) one cycle of the program should consist off. Lower values means lower latency, but if the value is set to low, cycles might become uneven in length.
 DMX_driver = "FT232R" # Can be replaced with "Dummy" for testing without a connected interface. Use "FT232R" for now.
+# DMX_driver = "Dummy" # Can be replaced with "Dummy" for testing without a connected interface. Use "FT232R" for now.
 
 Max_brightness = 127 # In DMX value. So the minumum is 0 and the maximum is 255.
 Max_Attack_cycles = 127 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks the attack phase can be.
