@@ -13,11 +13,11 @@ a = 0
 ### Global variables that can be manually set ###
 #################################################
 Number_of_lights = 32 # How many individually controllable lights you want to control. Right now, you should also change the number of channels in the dmx/constants.py file. Failure to do so can slow down the program since uncesscary commands then are being sent out.
-Midi_device = 'Elektron Syntakt:Elektron Syntakt MIDI 1' # Change this variable to whatever device you want to control the program. In order to get a list of all available devices, you can run: print(mido.get_input_names()). Also, notice that you don't have to include the "x:y" part at the end of the device name. In fact, it's probably better to leave this part out since it can (and probably will) change between reboots of the computer.
+Midi_device = 'Midihub MH-31KK5QB:Midihub MH-31KK5QB MIDI 2' # Change this variable to whatever device you want to control the program. In order to get a list of all available devices, you can run: print(mido.get_input_names()). Also, notice that you don't have to include the "x:y" part at the end of the device name. In fact, it's probably better to leave this part out since it can (and probably will) change between reboots of the computer.
 Respond_to_midi_channels = [15] # List which midi channels should be listened to for midi messages. Notice that counting starts at zero, meaning that what most devices call midi channel 1 will be represented by 0 in this array.
 Clock_ticks_per_cycle = 2 # How many ticks (one quarter note consists of 24 ticks) one cycle of the program should consist off. Lower values means lower latency, but if the value is set to low, cycles might become uneven in length.
 DMX_driver = "FT232R" # Can be replaced with "Dummy" for testing without a connected interface. Use "FT232R" for now.
-# DMX_driver = "Dummy" # Can be replaced with "Dummy" for testing without a connected interface. Use "FT232R" for now.
+# DMX_driver = "Dummy" # Can be replaced with "FT232R" when actually connected to an interface. Use "Dummy" for now.
 
 Max_brightness = 127 # In DMX value. So the minumum is 0 and the maximum is 255.
 Max_Attack_cycles = 127 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks the attack phase can be.
@@ -308,6 +308,7 @@ with DMXInterface(DMX_driver) as interface:
                     
                     elif hasattr(msg, 'note'): # If the message is a note event...
                         if(msg.type == 'note_on' and msg.velocity > 0): # If the note is a note on event...
+                            print(msg.type)
                             if(msg.note in Main_program_notes): # If the note is part of the main program notes...
                                 Layer2.Program[2] = Layer2.Program[1] # Copy program currently running to program that should be closed down.
                                 Layer2.Program[0][0] = Main_program_notes.index(msg.note) # Set main program part of program that should be implemented.
