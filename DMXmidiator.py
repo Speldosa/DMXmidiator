@@ -390,6 +390,7 @@ with DMXInterface(DMX_driver) as interface:
                             if(Layer2.Program[0][0] == 1): # Main program 1.
 
                                 if(Layer2.Program[0][1] == 0): # Sub program 0. Sweep from left to right.
+                                    print("I see you!")
                                     for Count in range(len(Layer1.Array_of_Layer1_objects)):
                                         Tmp = 1-(Count/(len(Layer1.Array_of_Layer1_objects)-1))
                                         Layer1.Array_of_Layer1_objects[Count] = Layer1_light_object(
