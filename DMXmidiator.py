@@ -1,6 +1,6 @@
 #######################
 ### Import packages ###
-#######################
+########################
 from dmx import Colour, DMXInterface, DMXLight3Slot, DMXUniverse
 from math import sin, pi
 from colorsys import hsv_to_rgb
