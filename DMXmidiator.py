@@ -19,7 +19,7 @@ Clock_ticks_per_cycle = 2 # How many ticks (one quarter note consists of 24 tick
 DMX_driver = "FT232R" # Can be replaced with "Dummy" for testing without a connected interface. Use "FT232R" for now.
 # DMX_driver = "Dummy" # Can be replaced with "FT232R" when actually connected to an interface. Use "Dummy" for now.
 
-Max_brightness = 127 # In DMX value. So the minumum is 0 and the maximum is 255.
+Max_brightness = 255 # In DMX value. So the minumum is 0 and the maximum is 255.
 Max_Attack_cycles = 127 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks the attack phase can be.
 Max_Decay_cycles = 127 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks the decay phase can be.
 Max_Sustain_cycles = 127 # If multiplied with Clock_ticks_per_cycle above, this results in the maximum number of ticks the sustain phase can be.
